@@ -26,7 +26,7 @@ fact =
     Lambda "rec" $
       Lambda "n" $
         If
-          (Eql (Var "n") (CstInt 0))
+          (Eql (Var "n") (CstInt 10))
           (CstInt 1)
           (Mul (Var "n") (Apply (Var "rec") (Sub (Var "n") (CstInt 1))))
 
@@ -183,7 +183,7 @@ tests =
         eval envEmpty
           (Apply
             (Div (CstInt 5) (CstInt 0))
-            (CstInt 2))
+            (Var "SomeString"))
           @?= Left "Division by zero",
 
       --
