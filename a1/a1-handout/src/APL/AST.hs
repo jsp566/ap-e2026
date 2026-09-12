@@ -33,7 +33,6 @@ maybeParenthesize (CstBool x) = printExp (CstBool x)
 maybeParenthesize (Var x) = printExp (Var x)
 maybeParenthesize x = "(" ++ printExp x ++ ")"
 
-
 notParenthesizeApply :: Exp -> String
 notParenthesizeApply (Apply exp1 exp2) = printExp (Apply exp1 exp2)
 notParenthesizeApply x = maybeParenthesize x

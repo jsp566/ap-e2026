@@ -54,7 +54,12 @@ forloop env i n body p =
         Right x -> 
           let newenv = envExtend p x env
           -- what if i gets updated above^? then should we get I again?
-          in forloop (envExtend i (ValInt (iint + 1)) newenv) i n body p
+          in case eval newenv (Var i) of
+            Right (ValInt newiint) -> forloop (envExtend i (ValInt (newiint + 1)) newenv) i n body p
+            -- This is possible if the body is non integral and p == i 
+            Right _ -> Left $ "Non-integral loop incrementer"
+            -- I dont think this is possible
+            Left x' -> Left x'
         Left err -> Left err
       else eval env (Var p)
     -- This is possible if the initial value of p is non integral and p == i    
@@ -102,8 +107,9 @@ eval env (Let var e1 e2) =
 eval env (ForLoop (p, initial) (i, bound) body) = 
   case (eval env initial, eval env bound) of
     (Right v, Right (ValInt n)) -> forloop (envExtend p v (envExtend i (ValInt 0) env)) i n body p
-    (Right _, _) -> Left "Non-integral loop bound"
-    (Left err, _) -> Left err        
+    (Right _, Right _) -> Left "Non-integral loop bound"
+    (Left err, _) -> Left err
+    (_, Left err) -> Left err        
 eval env (Lambda vname bodyexp) =
   Right $ ValFun env vname bodyexp
 eval env (Apply funexp argexp) =

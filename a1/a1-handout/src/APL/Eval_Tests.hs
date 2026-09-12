@@ -189,11 +189,41 @@ tests =
       --
       -- Add more here
       -- Loop tests
-      -- non-integral loop bound
       -- initial fails
-      -- p and i has same name
+      testCase "Loop initial fails" $
+        eval [] (ForLoop ("p", (Var "initialmissing")) ("i", (Var "boundmissing")) (Var "bodymissing"))
+          @?= Left "Unknown variable: initialmissing",
+      -- bound fails
+      testCase "Loop bound fails" $
+        eval [] (ForLoop ("p", (CstBool True)) ("i", (Var "boundmissing")) (Var "bodymissing"))
+          @?= Left "Unknown variable: boundmissing",
+      -- non-integral loop bound
+      testCase "Loop non-integral bound" $
+        eval [] (ForLoop ("p", (CstBool True)) ("i", (CstBool True)) (Var "bodymissing"))
+          @?= Left "Non-integral loop bound",
       -- p and i has same name so i becomes non integral
+      testCase "Loop non-integral loop incrementer" $
+        eval [] (ForLoop ("ip", (CstBool True)) ("ip", (CstInt 10)) (Var "bodymissing"))
+          @?= Left "Non-integral loop incrementer",
+      -- p and i has same name so i becomes non integral in the body
+      testCase "Loop non-integral loop incrementer" $
+        eval [] (ForLoop ("ip", (CstInt 1)) ("ip", (CstInt 10)) (CstBool True))
+          @?= Left "Non-integral loop incrementer",
       -- mid loop fails
+      testCase "Loop body fails" $
+        eval [] (ForLoop ("p", (CstInt 5)) ("i", (CstInt 10)) (Var "bodymissing"))
+          @?= Left "Unknown variable: bodymissing",
+      -- positive test
+      testCase "Loop positive test" $
+        eval [] (ForLoop ("p", (CstInt 1)) ("i", (CstInt 10)) (Mul (Var "p") (Add (Var "i") (CstInt 1))))
+          @?= Right (ValInt 3628800),
+      -- p and i has same name
+      testCase "Loop i and p same name and body adds 20 to i" $
+        eval [] (ForLoop ("ip", (CstInt 3)) ("ip", (CstInt 10)) (Add (Var "ip") (CstInt 20)))
+          @?= Right (ValInt 24),
+      testCase "Loop i and p same name and body subtracts 1 from i" $
+        eval [] (ForLoop ("ip", (CstInt 1)) ("ip", (CstInt 10)) (Sub (Var "ip") (CstInt 1)))
+          @?= Left "Timeout",
 
       -- Lambda tests
       -- valfun
@@ -201,6 +231,7 @@ tests =
       -- Apply tests
       -- positive test
       -- not a valfun
+      -- argument gives error
       
       -- two tests from top?
 

@@ -90,6 +90,8 @@ tests =
         printExp (Apply (Lambda "x" (Add (Var "x") (CstInt 1))) (CstInt 5))
           @?= "(\\x -> (x + 1)) 5",
 
+      -- Apply with another apply not parenthesized
+
 
       -- TryCatch
       testCase "TryCatch" $
