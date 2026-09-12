@@ -19,7 +19,32 @@ tests =
       testCase "CstBool true" $
         printExp (CstBool True)
           @?= "true",
-      --
+      -- Add 
+
+      -- Sub
+
+      -- Mul
+
+      -- Div
+
+      -- Pow
+
+      -- Eql
+
+      -- If
+
+      -- Var
+
+      -- Let
+
+      -- ForLoop
+
+      -- Lambda
+
+      -- Apply
+
+      -- TryCatch
+
       testCase "True" $
         True
         @?= True
