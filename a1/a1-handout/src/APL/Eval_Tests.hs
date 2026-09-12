@@ -26,7 +26,7 @@ fact =
     Lambda "rec" $
       Lambda "n" $
         If
-          (Eql (Var "n") (CstInt 10))
+          (Eql (Var "n") (CstInt 0))
           (CstInt 1)
           (Mul (Var "n") (Apply (Var "rec") (Sub (Var "n") (CstInt 1))))
 
@@ -118,74 +118,13 @@ tests =
             (CstInt 3))
           @?= Right (ValInt 5),
       --
-      testCase "TryCatch successful" $
-        eval envEmpty (TryCatch (CstInt 5) (CstInt 10))
-          @?= Right (ValInt 5),
+      testCase "TryCatch Example1" $
+        eval [] ( TryCatch (CstInt 0) (CstInt 1))
+          @?= Right (ValInt 0),
 
-      testCase "TryCatch failure" $
-        eval envEmpty (TryCatch (Div (CstInt 5) (CstInt 0)) (CstInt 10))
-          @?= Right (ValInt 10),
-      testCase "Factorial 3" $
-        eval envEmpty (Apply fact (CstInt 3))
-          @?= Right (ValInt 6),
-
-      testCase "Lambda Succesful" $
-        eval
-          [ ("y", ValInt 10) , ("z", ValInt 20)]
-          (Lambda "x" (Add (Var "x") (Add (Var "y") (Var "z"))))
-          @?= Right
-            (ValFun
-              [ ("y", ValInt 10)
-              , ("z", ValInt 20)
-              ]
-              "x"
-              (Add (Var "x") (Add (Var "y") (Var "z")))),
-
-      --
-
-      testCase "Lambda with boolean" $
-
-        eval envEmpty
-          (Lambda "x" (Eql (Var "x") (CstInt 5)))
-          @?= Right
-            (ValFun
-              envEmpty
-              "x"
-              (Eql (Var "x") (CstInt 5))),
-
-
-      testCase "Apply everything is successful" $
-        eval
-          [ ("y", ValInt 10)
-          , ("z", ValInt 20)
-          ]
-          (Apply
-            (Lambda "x" (Add (Var "x") (Add (Var "y") (Var "z"))))
-            (CstInt 5))
-          @?= Right (ValInt 35),
-
-      testCase "Apply argument errors" $
-        eval envEmpty
-          (Apply
-            (Lambda "x" (Var "x"))
-            (Div (CstInt 5) (CstInt 0)))
-          @?= Left "Division by zero",
-
-
-      testCase "Apply not given function" $
-        eval envEmpty
-          (Apply
-            (CstInt 5)
-            (CstInt 2))
-          @?= Left "First Exp does not evaluate to ValFun",
-
-      testCase "Apply first expression errors" $
-        eval envEmpty
-          (Apply
-            (Div (CstInt 5) (CstInt 0))
-            (Var "SomeString"))
-          @?= Left "Division by zero",
-
+      testCase "TryCatch Example2" $
+        eval [] ( TryCatch (Var " missing ") (CstInt 1))
+          @?= Right (ValInt 1),
       --
       -- Add more here
       -- Loop tests
@@ -201,14 +140,14 @@ tests =
       testCase "Loop non-integral bound" $
         eval [] (ForLoop ("p", (CstBool True)) ("i", (CstBool True)) (Var "bodymissing"))
           @?= Left "Non-integral loop bound",
-      -- p and i has same name so i becomes non integral
+      -- p and i has same name, but initial does not overwrite the integer value of i
+      testCase "Loop initial does not overwrite i" $
+        eval [] (ForLoop ("ip", (CstBool True)) ("ip", (CstInt 10)) (Var "ip"))
+          @?= Right (ValInt 10),
+      -- p and i has same name, but body does not overwrite the integer value
       testCase "Loop non-integral loop incrementer" $
-        eval [] (ForLoop ("ip", (CstBool True)) ("ip", (CstInt 10)) (Var "bodymissing"))
-          @?= Left "Non-integral loop incrementer",
-      -- p and i has same name so i becomes non integral in the body
-      testCase "Loop non-integral loop incrementer" $
-        eval [] (ForLoop ("ip", (CstInt 1)) ("ip", (CstInt 10)) (CstBool True))
-          @?= Left "Non-integral loop incrementer",
+        eval [] (ForLoop ("ip", (CstInt 1)) ("ip", (CstInt 11)) (CstBool True))
+          @?= Right (ValInt 11),
       -- mid loop fails
       testCase "Loop body fails" $
         eval [] (ForLoop ("p", (CstInt 5)) ("i", (CstInt 10)) (Var "bodymissing"))
@@ -219,34 +158,84 @@ tests =
           @?= Right (ValInt 3628800),
       -- p and i has same name
       testCase "Loop i and p same name and body adds 20 to i" $
-        eval [] (ForLoop ("ip", (CstInt 3)) ("ip", (CstInt 10)) (Add (Var "ip") (CstInt 20)))
-          @?= Right (ValInt 24),
+        eval [] (ForLoop ("ip", (CstInt 3)) ("ip", (CstInt 12)) (Add (Var "ip") (CstInt 20)))
+          @?= Right (ValInt 12),
       testCase "Loop i and p same name and body subtracts 1 from i" $
-        eval [] (ForLoop ("ip", (CstInt 1)) ("ip", (CstInt 10)) (Sub (Var "ip") (CstInt 1)))
-          @?= Left "Timeout",
+        eval [] (ForLoop ("ip", (CstInt 1)) ("ip", (CstInt 13)) (Sub (Var "ip") (CstInt 1)))
+          @?= Right (ValInt 13),
 
       -- Lambda tests
       -- valfun
+      testCase "Lambda Succesful" $
+        eval envEmpty
+          (Lambda "x" (Eql (Var "x") (CstInt 5)))
+          @?= Right
+            (ValFun
+              envEmpty
+              "x"
+              (Eql (Var "x") (CstInt 5))),
+      -- 
+      testCase "Lambda Succesful with environment" $
+        eval
+          [ ("y", ValInt 10) , ("z", ValInt 20)]
+          (Lambda "x" (Add (Var "x") (Add (Var "y") (Var "z"))))
+          @?= Right
+            (ValFun
+              [ ("y", ValInt 10)
+              , ("z", ValInt 20)
+              ]
+              "x"
+              (Add (Var "x") (Add (Var "y") (Var "z")))),
       
       -- Apply tests
-      -- positive test
+      -- first expression gives error
+      testCase "Apply first expression errors" $
+        eval envEmpty
+          (Apply
+            (Div (CstInt 5) (CstInt 0))
+            (Var "SomeString"))
+          @?= Left "Division by zero",
       -- not a valfun
-      -- argument gives error
-      
-      -- two tests from top?
+      testCase "Apply not given function" $
+        eval envEmpty
+          (Apply
+            (CstInt 5)
+            (CstInt 2))
+          @?= Left "First Exp does not evaluate to ValFun",
+     -- argument gives error
+      testCase "Apply argument errors" $
+        eval envEmpty
+          (Apply
+            (Lambda "x" (Var "x"))
+            (Div (CstInt 5) (CstInt 0)))
+          @?= Left "Division by zero",
+      -- positive test
+      testCase "Apply everything is successful" $
+        eval
+          [ ("y", ValInt 10)
+          , ("z", ValInt 20)
+          ]
+          (Apply
+            (Lambda "x" (Add (Var "x") (Add (Var "y") (Var "z"))))
+            (CstInt 5))
+          @?= Right (ValInt 35),
 
       -- Try-Catch tests
-      -- try
+      -- try 
+      testCase "TryCatch successful" $
+        eval envEmpty (TryCatch (CstInt 5) (CstInt 10))
+          @?= Right (ValInt 5),
       -- catch
+      testCase "TryCatch failure" $
+        eval envEmpty (TryCatch (Div (CstInt 5) (CstInt 0)) (CstInt 10))
+          @?= Right (ValInt 10),
 
-
-      --
+      -- Extra
+      testCase "Factorial 3" $
+        eval envEmpty (Apply fact (CstInt 3))
+          @?= Right (ValInt 6),
 
       testCase "True" $
         True
         @?= True
-      
-
-
-
     ]

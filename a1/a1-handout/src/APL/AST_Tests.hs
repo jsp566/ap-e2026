@@ -21,15 +21,15 @@ tests =
           @?= "true",
       -- Add 
       testCase "Adding" $
-        printExp (Add (CstInt 5) (CstInt 3))
-          @?= "5 + 3",
+        printExp (Add (CstInt 5) (Add (CstInt 5) (CstInt 3)))
+          @?= "5 + (5 + 3)",
       -- Sub
       testCase "Subtracting" $
-        printExp (Sub (CstInt 69) (CstInt 2))
-          @?= "69 - 2",
+        printExp (Sub (Sub (CstInt 69) (CstInt 2)) (CstInt 2))
+          @?= "(69 - 2) - 2",
       testCase "Subtracting negative values" $
-        printExp (Sub (CstInt (-1)) (CstInt 2))
-          @?= "-1 - 2",
+        printExp (Sub (CstInt (-1)) (Sub (CstInt (-7)) (CstInt 2)))
+          @?= "-1 - (-7 - 2)",
       -- Mul
       testCase "Multiplying " $
         printExp (Mul (CstInt (-1)) (CstInt 2))
@@ -91,7 +91,9 @@ tests =
           @?= "(\\x -> (x + 1)) 5",
 
       -- Apply with another apply not parenthesized
-
+      testCase "Applying with another apply" $
+        printExp (Apply (Apply (Var "f") (CstInt 5)) (Add (CstBool True) (CstInt 1)))
+          @?= "f 5 (true + 1)",
 
       -- TryCatch
       testCase "TryCatch" $

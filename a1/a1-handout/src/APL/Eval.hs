@@ -45,27 +45,17 @@ evalIntBinOp' f env e1 e2 =
 
 
 
-forloop :: Env -> VName -> Integer -> Exp -> VName -> Either Error Val
-forloop env i n body p = 
-  case eval env (Var i) of
-    Right (ValInt iint) -> 
-      if iint < n
-      then case eval env body of
-        Right x -> 
-          let newenv = envExtend p x env
-          -- what if i gets updated above^? then should we get I again?
-          in case eval newenv (Var i) of
-            Right (ValInt newiint) -> forloop (envExtend i (ValInt (newiint + 1)) newenv) i n body p
-            -- This is possible if the body is non integral and p == i 
-            Right _ -> Left $ "Non-integral loop incrementer"
-            -- I dont think this is possible
-            Left x' -> Left x'
-        Left err -> Left err
-      else eval env (Var p)
-    -- This is possible if the initial value of p is non integral and p == i    
-    Right _ -> Left $ "Non-integral loop incrementer"
-    -- I dont think this is possible
-    Left x -> Left x
+forloop :: Env -> VName -> Integer -> Integer -> Exp -> VName -> Either Error Val
+forloop env i iint n body p = 
+  if iint < n
+  then case eval env body of
+    Right x -> 
+      let newenv = envExtend p x env
+          newiint = iint + 1
+      -- what if i gets updated above^? then should we get I again? No
+      in forloop (envExtend i (ValInt newiint) newenv) i newiint n body p
+    Left err -> Left err
+  else eval env (Var p)
 
 eval :: Env -> Exp -> Either Error Val
 eval _env (CstInt x) = Right $ ValInt x
@@ -106,7 +96,7 @@ eval env (Let var e1 e2) =
 -- TODO: Add cases after extending Exp.
 eval env (ForLoop (p, initial) (i, bound) body) = 
   case (eval env initial, eval env bound) of
-    (Right v, Right (ValInt n)) -> forloop (envExtend p v (envExtend i (ValInt 0) env)) i n body p
+    (Right v, Right (ValInt n)) -> forloop (envExtend p v (envExtend i (ValInt 0) env)) i 0 n body p
     (Right _, Right _) -> Left "Non-integral loop bound"
     (Left err, _) -> Left err
     (_, Left err) -> Left err        
