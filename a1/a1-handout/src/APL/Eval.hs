@@ -112,7 +112,8 @@ eval env (Apply funexp argexp) =
       case (eval env argexp) of
         Left err -> Left err
         Right arg -> eval (envExtend vname arg funenv) bodyexp
-    _ -> Left "First Exp does not evaluate to ValFun"
+    Right _ -> Left "First Exp does not evaluate to ValFun"
+    Left err -> Left err
 eval env (TryCatch exp1 exp2) =
   case eval env exp1 of 
     Right v -> Right v
