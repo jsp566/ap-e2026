@@ -24,7 +24,7 @@ tests =
   testGroup
     "Checking"
     [ testCase "Example 1" $
-        checkExp (CstInt 2)
+        checkExp (CstInt 2) 
           @?= Nothing,
       --
       testCase "Example 2" $

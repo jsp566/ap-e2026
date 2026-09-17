@@ -23,11 +23,76 @@ import Text.Megaparsec.Char (space)
 -- Do not change this definition.
 type Parser = Parsec Void String
 
+lexeme :: Parser a -> Parser a
+lexeme p = p <* space
+
+lInteger :: Parser Integer
+lInteger = lexeme $ read <$> some (satisfy isDigit) <* notFollowedBy (satisfy isAlpha)
+
+keywords :: [String]
+keywords =
+  [ "true",
+    "false"
+  ]
+
+lVName :: Parser VName
+lVName = lexeme $ try $ do
+  c <- satisfy isAlpha
+  cs <- many $ satisfy isAlphaNum
+  let v = c : cs
+  if v `elem` keywords
+    then fail "Unexpected keyword"
+    else pure v
+
+lKeyword :: String -> Parser ()
+lKeyword s = lexeme $ void $ try $ chunk s <* notFollowedBy (satisfy isAlphaNum)
+
+lString :: String -> Parser ()
+lString s = lexeme $ void $ chunk s
+
+pBool :: Parser Bool
+pBool = choice [const True <$> lKeyword "true", const False <$> lKeyword "false"]
+
+pAtom :: Parser Exp
+pAtom =
+  choice
+    [ CstInt <$> lInteger,
+      CstBool <$> lBool,
+      Var <$> lVName,
+      lString "(" *> pExp <* lString ")"
+    ]
+
+pExp0 :: Parser Exp
+pExp0 = pAtom >>= chain
+  where
+    chain x =
+      choice
+        [ do
+            lString "+"
+            y <- pAtom
+            chain $ Add x y,
+          do
+            lString "-"
+            y <- pAtom
+            chain $ Sub x y,
+          do
+            lString "*"
+            y <- pAtom
+            chain $ Mul x y,
+          do
+            lString "/"
+            y <- pAtom
+            chain $ Div x y,
+          pure x
+        ]
+
 pExp :: Parser Exp
-pExp = undefined
+pExp = pExp0
 
 -- Do not change this definition.
 parseAPL :: FilePath -> String -> Either String Exp
 parseAPL fname s = case parse (space *> pExp <* eof) fname s of
   Left err -> Left $ errorBundlePretty err
   Right x -> Right x
+
+
