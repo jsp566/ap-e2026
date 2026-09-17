@@ -34,5 +34,12 @@ tests =
       testCase "Example 3" $
         checkExp (Lambda "x" (Var "x"))
           @?= Nothing
-      --
+      -- Add more tests:
+      -- check simple positive
+      -- check simple fail
+      -- check let
+      -- check forloop
+      -- check Lambda
+      -- check apply?
+      -- check KvPut then KvGet
     ]

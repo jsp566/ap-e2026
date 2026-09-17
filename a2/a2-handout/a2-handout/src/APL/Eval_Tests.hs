@@ -106,7 +106,18 @@ printTests =
           Let "x" (Print "foo" $ CstInt 2) 
           (Var "bar"))
           @?= (["foo: 2"],Left "Unknown variable: bar")
-      --
+      -- Add more tests:
+      -- print int
+      -- print bool
+      -- print valfun
+      -- print multiple has correct order
+      -- print and then fail keeps print
+      -- try print and fail keeps print in catch
+      -- printing in let
+      -- printing in for loop
+      -- printing in lambda
+      -- printing in apply
+
     ]
 
 kvTests :: TestTree
@@ -131,7 +142,15 @@ kvTests =
           (Let "y" (KvPut (CstInt 0) (CstBool False)) 
           (KvGet (CstInt 0))))
           @?= ([],Right (ValBool False))
-      --
+      -- Add more tests:
+      -- Key does exist
+      -- Key does not exist
+      -- Key gets overwritten
+      -- try putkey and fail keeps key in catch
+      -- putkey in let
+      -- putkey in for loop
+      -- putkey in lambda
+      -- putkey in apply
     ]
 
 tests :: TestTree
