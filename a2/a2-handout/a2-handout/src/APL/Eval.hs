@@ -39,10 +39,10 @@ envExtend :: VName -> Val -> Env -> Env
 envExtend v val (env,st) = ((v, val) : env,st)
 
 envLookup :: VName -> Env -> Maybe Val
-envLookup v (env,st) = lookup v env
+envLookup v (env,_st) = lookup v env
 
 kvsLookup :: Val -> Env -> Maybe Val
-kvsLookup v (ens,(s,kvs)) = lookup v kvs
+kvsLookup v (_ens,(_s,kvs)) = lookup v kvs
 
 type Error = String
 
@@ -53,7 +53,7 @@ instance Functor EvalM where
   fmap = liftM
 
 instance Applicative EvalM where
-  pure x = EvalM $ \(env,st) -> (st, Right x)
+  pure x = EvalM $ \(_env,st) -> (st, Right x)
   (<*>) = ap
 
 instance Monad EvalM where
@@ -71,7 +71,7 @@ localEnv :: (Env -> Env) -> EvalM a -> EvalM a
 localEnv f (EvalM m) = EvalM $ \env -> m (f env)
 
 failure :: String -> EvalM a
-failure s = EvalM $ \(env,st) -> (st, Left s)
+failure s = EvalM $ \(_env,st) -> (st, Left s)
 
 catch :: EvalM a -> EvalM a -> EvalM a
 catch (EvalM m1) (EvalM m2) = EvalM $ \(env,st) ->
@@ -80,10 +80,10 @@ catch (EvalM m1) (EvalM m2) = EvalM $ \(env,st) ->
     (st1, Right x) -> (st1, Right x)
 
 evalPrint :: String -> EvalM ()
-evalPrint s = EvalM $ \(env,st) -> ((addPrint st s), Right ())
+evalPrint s = EvalM $ \(_env,st) -> ((addPrint st s), Right ())
 
 evalKvPut :: Val -> Val -> EvalM ()
-evalKvPut k v = EvalM $ \(env,st) -> ((addKVpair st k v), Right ())
+evalKvPut k v = EvalM $ \(_env,st) -> ((addKVpair st k v), Right ())
 
 evalKvGet :: Val -> EvalM Val
 evalKvGet k = EvalM $ \(env,st) -> 
