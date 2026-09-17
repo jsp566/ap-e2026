@@ -36,10 +36,17 @@ tests =
           @?= Nothing
       -- Add more tests:
       -- check simple positive
+
       -- check simple fail
+
       -- check let
+
       -- check forloop
+
       -- check Lambda
+
       -- check apply?
+
       -- check KvPut then KvGet
+      
     ]

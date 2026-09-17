@@ -105,17 +105,31 @@ printTests =
         eval' (
           Let "x" (Print "foo" $ CstInt 2) 
           (Var "bar"))
-          @?= (["foo: 2"],Left "Unknown variable: bar")
+          @?= (["foo: 2"],Left "Unknown variable: bar"),
       -- Add more tests:
       -- print int
+
       -- print bool
+
       -- print valfun
+
       -- print multiple has correct order
+
       -- print and then fail keeps print
-      -- try print and fail keeps print in catch
+
+      -- Try print and fail keeps print in catch
+      testCase "Try print and fail keeps print in catch" $
+        eval' (
+          TryCatch 
+            (Div (Print "Numerator" $ CstInt 2) (Print "Denomenator" $ CstInt 0))
+            (Print "Catch" $ CstBool True))
+          @?= (["Numerator: 2","Denomenator: 0","Catch: True"],Right (ValBool True))
       -- printing in let
+
       -- printing in for loop
+
       -- printing in lambda
+      
       -- printing in apply
 
     ]
@@ -141,16 +155,29 @@ kvTests =
           Let "x" (KvPut (CstInt 0) (CstBool True)) 
           (Let "y" (KvPut (CstInt 0) (CstBool False)) 
           (KvGet (CstInt 0))))
-          @?= ([],Right (ValBool False))
+          @?= ([],Right (ValBool False)),
       -- Add more tests:
       -- Key does exist
+
       -- Key does not exist
+
       -- Key gets overwritten
-      -- try putkey and fail keeps key in catch
+
+      -- Try putkey and fail keeps key in catch
+      testCase "Try putkey and fail keeps key in catch" $
+        eval' (
+          TryCatch 
+            (Div (KvPut (CstBool True) (CstInt 2)) (KvPut (CstBool True) (CstInt 0)))
+            (KvGet $ CstBool True))
+          @?= ([],Right (ValInt 0))
       -- putkey in let
+
       -- putkey in for loop
+
       -- putkey in lambda
+
       -- putkey in apply
+
     ]
 
 tests :: TestTree
