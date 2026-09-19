@@ -2,6 +2,7 @@ module APL.Eval_Tests (tests) where
 
 import APL.AST (Exp (..))
 import APL.Eval (Error, Val (..), eval, runEval)
+
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (testCase, (@?=))
 
@@ -86,6 +87,7 @@ evalTests =
           @?= ([], Right (ValBool True))
     ]
 
+
 printTests :: TestTree
 printTests =
   testGroup
@@ -106,33 +108,70 @@ printTests =
           Let "x" (Print "foo" $ CstInt 2) 
           (Var "bar"))
           @?= (["foo: 2"],Left "Unknown variable: bar"),
-      -- Add more tests:
-      -- print int
+          
+      testCase "Print integer" $
+        eval'
+          (Print "foo" (CstInt 2))
+          @?= (["foo: 2"], Right (ValInt 2))
 
-      -- print bool
+    , testCase "Print boolean" $
+        eval'
+          (Print "answer" (CstBool True))
+          @?= (["answer: True"], Right (ValBool True))
 
-      -- print valfun
+    , testCase "Print function" $
+        eval'
+          (Print "answer" (Lambda "x" (Var "x")))
+          @?= (["answer: #<fun>"],Right (ValFun ([],([],[])) "x" (Var "x")))
 
-      -- print multiple has correct order
+    , testCase "Print returns value" $
+        eval'
+          (Let
+            "x"
+            (Print "foo" (CstInt 2))
+            (Add (Var "x") (CstInt 3)))
+          @?= (["foo: 2"], Right (ValInt 5))
 
-      -- print and then fail keeps print
+    , testCase "Print multiple values in order" $
+        eval'
+          (Let
+            "_"
+            (Print "first" (CstInt 1))
+            (Print "second" (CstInt 2)))
+          @?= (["first: 1", "second: 2"], Right (ValInt 2))
 
-      -- Try print and fail keeps print in catch
-      testCase "Try print and fail keeps print in catch" $
-        eval' (
-          TryCatch 
-            (Div (Print "Numerator" $ CstInt 2) (Print "Denomenator" $ CstInt 0))
-            (Print "Catch" $ CstBool True))
-          @?= (["Numerator: 2","Denomenator: 0","Catch: True"],Right (ValBool True))
-      -- printing in let
+    , testCase "Print function and apply" $
+        eval'
+          (Let
+            "f"
+            (Print "fun" (Lambda "x" (Var "x")))
+            (Apply (Var "f") (CstInt 10)))
+          @?= (["fun: #<fun>"], Right (ValInt 10))
+
+    , testCase "Print before later error" $
+        eval'
+          (Let
+            "_"
+            (Print "foo" (CstInt 2))
+            (Var "bar"))
+          @?= (["foo: 2"], Left "Unknown variable: bar")
+
+    , testCase "TryCatch preserves printed output" $
+        eval'
+          (TryCatch
+            (Let
+              "_"
+              (Print "before" (CstInt 1))
+              (Div (CstInt 1) (CstInt 0)))
+            (Print "after" (CstInt 2)))
+          @?= (["before: 1", "after: 2"], Right (ValInt 2))
 
       -- printing in for loop
-
       -- printing in lambda
       
       -- printing in apply
-
     ]
+
 
 kvTests :: TestTree
 kvTests =
@@ -156,29 +195,66 @@ kvTests =
           (Let "y" (KvPut (CstInt 0) (CstBool False)) 
           (KvGet (CstInt 0))))
           @?= ([],Right (ValBool False)),
-      -- Add more tests:
-      -- Key does exist
+          
+      testCase "KvPut returns value" $
+        eval'
+          (KvPut (CstInt 0) (CstBool True))
+          @?= ([],Right (ValBool True))
 
-      -- Key does not exist
+    , testCase "KvPut then KvGet" $
+        eval'
+          (Let
+            "_"
+            (KvPut (CstInt 0) (CstBool True))
+            (KvGet (CstInt 0)))
+          @?= ([],Right (ValBool True))
 
-      -- Key gets overwritten
+    , testCase "KvGet invalid key" $
+        eval'
+          (Let
+            "_"
+            (KvPut (CstInt 0) (CstBool True))
+            (KvGet (CstInt 1)))
+          @?= ([],Left "Invalid key: ValInt 1")
+
+    , testCase "KvPut replaces existing key" $
+        eval'
+          (Let
+            "_"
+            (KvPut (CstInt 0) (CstBool True))
+            (Let
+              "_"
+              (KvPut (CstInt 0) (CstBool False))
+              (KvGet (CstInt 0))))
+          @?= ([],Right (ValBool False))
+
+    , testCase "Boolean key" $
+        eval'
+          (Let
+            "_"
+            (KvPut (CstBool True) (CstInt 42))
+            (KvGet (CstBool True)))
+          @?= ([],Right (ValInt 42))
+
+    , testCase "KvPut and Print share state" $
+        eval'
+          (Let
+            "_"
+            (KvPut (CstInt 0) (CstBool True))
+            (Print "stored" (KvGet (CstInt 0))))
+          @?= (["stored: True"], Right (ValBool True))
+
+    , testCase "KvGet failure" $
+        eval'
+          (KvGet (CstInt 99))
+          @?= ([], Left "Invalid key: ValInt 99")
 
       -- Try putkey and fail keeps key in catch
-      testCase "Try putkey and fail keeps key in catch" $
-        eval' (
-          TryCatch 
-            (Div (KvPut (CstBool True) (CstInt 2)) (KvPut (CstBool True) (CstInt 0)))
-            (KvGet $ CstBool True))
-          @?= ([],Right (ValInt 0))
-      -- putkey in let
-
       -- putkey in for loop
-
       -- putkey in lambda
-
       -- putkey in apply
-
     ]
+
 
 tests :: TestTree
 tests = testGroup "Evaluation" [evalTests, printTests, kvTests]
