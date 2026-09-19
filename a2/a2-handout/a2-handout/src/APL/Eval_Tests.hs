@@ -145,8 +145,8 @@ printTests =
           (Let
             "f"
             (Print "fun" (Lambda "x" (Var "x")))
-            (Apply (Var "f") (CstInt 10)))
-          @?= (["fun: #<fun>"], Right (ValInt 10))
+            (Apply (Var "f") (Print "test" (CstInt 10))))
+          @?= (["fun: #<fun>","test: 10"], Right (ValInt 10))
 
     , testCase "Print before later error" $
         eval'
@@ -167,9 +167,22 @@ printTests =
           @?= (["before: 1", "after: 2"], Right (ValInt 2))
 
       -- printing in for loop
+    , testCase "Printing in for loop" $
+        eval'
+          (ForLoop ("p", (Print "p" (CstInt 0))) ("i", (Print "i" (CstInt 4))) (Print "Result" (Add (Var "p") (Var "i"))))
+          @?= (["p: 0","i: 4","Result: 0","Result: 1","Result: 3","Result: 6"],Right (ValInt 6))
+
       -- printing in lambda
+    , testCase "Printing in lambda" $
+        eval'
+          (Lambda "x" (Print "x" (Var "x")))
+          @?= ([],Right (ValFun ([],([],[])) "x" (Print "x" (Var "x"))))
       
       -- printing in apply
+    , testCase "Printing in apply" $
+        eval'
+          (Apply (Lambda "x" (Print "x" (Var "x"))) (CstInt 4))
+          @?= (["x: 4"],Right (ValInt 4))
     ]
 
 
@@ -249,10 +262,38 @@ kvTests =
           (KvGet (CstInt 99))
           @?= ([], Left "Invalid key: ValInt 99")
 
-      -- Try putkey and fail keeps key in catch
-      -- putkey in for loop
-      -- putkey in lambda
-      -- putkey in apply
+    , testCase "KvPut function and apply" $
+        eval'
+          (Let
+            "f"
+            (KvPut (CstInt 0) (Lambda "x" (Var "x")))
+            (Apply (KvGet (CstInt 0)) (CstInt 10)))
+          @?= ([], Right (ValInt 10))
+
+    , testCase "TryCatch preserves KvPut" $
+        eval'
+          (TryCatch
+            ((Div (KvPut (CstInt 0) (CstBool True)) (CstInt 0)))
+            (KvGet (CstInt 0)))
+          @?= ([], Right (ValBool True))
+
+      -- KvPut in for loop
+    , testCase "KvPut in for loop" $
+        eval'
+          (ForLoop ("p", (Print "p" (CstInt 0))) ("i", (Print "i" (CstInt 4))) (Print "Result" (Add (Var "p") (Var "i"))))
+          @?= (["p: 0","i: 4","Result: 0","Result: 1","Result: 3","Result: 6"],Right (ValInt 6))
+
+      -- KvPut in lambda
+    , testCase "KvPut in lambda" $
+        eval'
+          (Lambda "x" (KvPut (CstInt 0) (Var "x")))
+          @?= ([],Right (ValFun ([],([],[])) "x" (KvPut (CstInt 0) (Var "x"))))
+      
+      -- KvPut in apply
+    , testCase "KvPut in apply" $
+        eval'
+          (Apply (Lambda "x" (KvGet (Var "x"))) (KvPut (CstInt 4) (CstInt 4)))
+          @?= ([],Right (ValInt 4))
     ]
 
 

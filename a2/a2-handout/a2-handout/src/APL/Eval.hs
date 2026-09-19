@@ -27,6 +27,9 @@ addPrint (slist,kvs) news = ((slist ++ [news]),kvs)
 addKVpair :: State -> Val -> Val -> State
 addKVpair (slist,kvs) k v = (slist,((k,v) : kvs))
 
+joinStates :: State -> State -> State
+joinStates (slist1,kvs1) (slist2,kvs2) = (slist1 ++ slist2, kvs1 ++ kvs2)
+
 removeKVS :: (State, Either Error a) -> ([ String ], Either Error a)
 removeKVS ((s,_), v) = (s,v)
 
@@ -43,6 +46,9 @@ envLookup v (env,_st) = lookup v env
 
 kvsLookup :: Val -> Env -> Maybe Val
 kvsLookup v (_ens,(_s,kvs)) = lookup v kvs
+
+const' :: Env -> Env -> Env
+const' (env1,st1) (_env2,st2) = (env1,(joinStates st1 st2))
 
 type Error = String
 
@@ -170,7 +176,7 @@ eval (Apply e1 e2) = do
   v2 <- eval e2
   case (v1, v2) of
     (ValFun f_env var body, arg) ->
-      localEnv (const $ envExtend var arg f_env) $ eval body
+      localEnv (const' $ envExtend var arg f_env) $ eval body
     (_, _) ->
       failure "Cannot apply non-function"
 eval (TryCatch e1 e2) =
