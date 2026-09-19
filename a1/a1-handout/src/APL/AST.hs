@@ -19,6 +19,7 @@ data Exp
   | If Exp Exp Exp
   | Var VName
   | Let VName Exp Exp
+  -- TODO: add cases
   | ForLoop (VName, Exp) (VName, Exp) Exp
   | Lambda VName Exp
   | Apply Exp Exp
@@ -39,7 +40,7 @@ notParenthesizeApply x = maybeParenthesize x
 join :: Exp -> String -> Exp -> String
 join exp1 s exp2 = maybeParenthesize exp1 ++ s ++ maybeParenthesize exp2
 
-printExp :: Exp -> String 
+printExp :: Exp -> String -- TODO
 printExp (CstInt x) = show x
 printExp (CstBool False) = "false"
 printExp (CstBool True) = "true"
