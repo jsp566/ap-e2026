@@ -30,7 +30,11 @@ keywords =
     "then",
     "else",
     "true",
-    "false"
+    "false",
+    "print",
+    "get",
+    "put"
+    -- Add keywords from task 4?
   ]
 
 lVName :: Parser VName
@@ -52,6 +56,17 @@ lString s = lexeme $ void $ chunk s
 lKeyword :: String -> Parser ()
 lKeyword s = lexeme $ void $ try $ chunk s <* notFollowedBy (satisfy isAlphaNum)
 
+lKeywordMaybeFollowedByAlpha :: String -> Parser ()
+lKeywordMaybeFollowedByAlpha s = lexeme $ void $ try $ chunk s
+
+lPrintString :: Parser String
+lPrintString =
+  lexeme $ try $ do
+  _ <- satisfy (=='"')
+  cs <- some $ satisfy (/='"')
+  _ <- satisfy (=='"')
+  pure cs
+
 pBool :: Parser Bool
 pBool =
   choice $
@@ -68,11 +83,10 @@ pAtom =
       lString "(" *> pExp <* lString ")"
     ]
 
+
+-- Make apply work (FExp ::= ... | FExp FExp)
 pFExp :: Parser Exp
-pFExp =
-  choice
-    [ pAtom
-    ]
+pFExp = pAtom
 
 pLExp :: Parser Exp
 pLExp =
@@ -81,22 +95,83 @@ pLExp =
         <$> (lKeyword "if" *> pExp)
         <*> (lKeyword "then" *> pExp)
         <*> (lKeyword "else" *> pExp),
+      Lambda
+        <$> (lKeywordMaybeFollowedByAlpha "\\" *> lVName)
+        <*> (lKeyword "->" *> pExp),
+      TryCatch 
+        <$> (lKeyword "try" *> pExp)
+        <*> (lKeyword "catch" *> pExp),
+      Let
+        <$> (lKeyword "let" *> lVName)
+        <*> (lKeyword "=" *> pExp)
+        <*> (lKeyword "in" *> pExp),
+      ForLoop
+        <$> ((,) 
+          <$> (lKeyword "loop" *> lVName)
+          <*> (lKeyword "=" *> pExp))
+        <*> ((,) 
+          <$> (lKeyword "for" *> lVName)
+          <*> (lKeyword "<" *> pExp))
+        <*> (lKeyword "do" *> pExp),
       pFExp
     ]
 
-pExp1 :: Parser Exp
-pExp1 = pLExp >>= chain
+
+pExp4 :: Parser Exp
+pExp4 =
+  choice
+    [ Print
+        <$> (lKeyword "print" *> lPrintString)
+        <*> pAtom,
+      KvGet
+        <$> (lKeyword "get" *> pAtom),
+      KvPut
+        <$> (lKeyword "put" *> pAtom)
+        <*> pAtom,
+      pLExp
+    ]
+
+pExp3 :: Parser Exp
+pExp3 = pExp4 >>= chain
+  where
+    chain x =
+      choice
+        [ do
+            lString "**"
+            y <- pExp3
+            chain $ Pow x y,
+          pure x
+        ]
+
+pExp2 :: Parser Exp
+pExp2 = pExp3 >>= chain
   where
     chain x =
       choice
         [ do
             lString "*"
-            y <- pLExp
+            y <- pExp3
             chain $ Mul x y,
           do
             lString "/"
-            y <- pLExp
+            y <- pExp3
             chain $ Div x y,
+          pure x
+        ]
+
+pExp1 :: Parser Exp
+pExp1 = pExp2 >>= chain
+  where
+    chain x =
+      choice
+        [ do
+            lString "+"
+            y <- pExp2
+            chain $ Add x y,
+          do
+            lString "-"
+            y <- pExp2
+            chain $ Sub x y,
           pure x
         ]
 
@@ -106,13 +181,9 @@ pExp0 = pExp1 >>= chain
     chain x =
       choice
         [ do
-            lString "+"
+            lString "=="
             y <- pExp1
-            chain $ Add x y,
-          do
-            lString "-"
-            y <- pExp1
-            chain $ Sub x y,
+            chain $ Eql x y,
           pure x
         ]
 

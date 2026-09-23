@@ -74,7 +74,9 @@ tests =
       testGroup
         "Task 2: Equality and power operators"
         [ parserTest "x*y**z" $ Mul (Var "x") (Pow (Var "y") (Var "z")),
-          parserTest "x+y==y+x" $ Eql (Add (Var "x") (Var "y")) (Add (Var "y") (Var "x"))
+          parserTest "x**y**z" $ Pow (Var "x") (Pow (Var "y") (Var "z")),
+          parserTest "x+y==y+x" $ Eql (Add (Var "x") (Var "y")) (Add (Var "y") (Var "x")),
+          parserTest "x==y==z" $ Eql (Eql (Var "x") (Var "y")) (Var "z")
         ],
       testGroup
         "Task 3: Printing, putting, and getting"
@@ -89,6 +91,8 @@ tests =
           parserTestFail "let true = y in z",
           parserTestFail "x let v = 2 in v",
           parserTest "\\x -> x + x" $ Lambda "x" (Add (Var "x") (Var "x")),
-          parserTest "(\\x -> x) + x" $ Add (Lambda "x" (Var "x")) (Var "x")
+          parserTest "(\\x -> x) + x" $ Add (Lambda "x" (Var "x")) (Var "x"),
+          parserTest "try x catch y" $ TryCatch (Var "x") (Var "y"),
+          parserTest "loop p = x for i < y do z" $ ForLoop ("p", (Var "x")) ("i", (Var "y")) (Var "z")
         ]
     ]
