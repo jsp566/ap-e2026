@@ -68,6 +68,12 @@ pAtom =
       lString "(" *> pExp <* lString ")"
     ]
 
+pFExp :: Parser Exp
+pFExp =
+  choice
+    [ pAtom
+    ]
+
 pLExp :: Parser Exp
 pLExp =
   choice
@@ -75,7 +81,7 @@ pLExp =
         <$> (lKeyword "if" *> pExp)
         <*> (lKeyword "then" *> pExp)
         <*> (lKeyword "else" *> pExp),
-      pAtom
+      pFExp
     ]
 
 pExp1 :: Parser Exp
