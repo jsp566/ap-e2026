@@ -31,10 +31,18 @@ keywords =
     "else",
     "true",
     "false",
+    -- Keywords from task 3
     "print",
     "get",
-    "put"
-    -- Add keywords from task 4?
+    "put",
+    -- Keywords from task 4
+    "try",
+    "catch",
+    "let",
+    "in",
+    "loop",
+    "for",
+    "do"  
   ]
 
 lVName :: Parser VName
@@ -84,9 +92,16 @@ pAtom =
     ]
 
 
--- Make apply work (FExp ::= ... | FExp FExp)
 pFExp :: Parser Exp
-pFExp = pAtom
+pFExp = pAtom >>= chain
+  where
+    chain x =
+      choice
+        [ do
+            y <- pAtom
+            chain $ Apply x y,
+          pure x
+        ]
 
 pLExp :: Parser Exp
 pLExp =
