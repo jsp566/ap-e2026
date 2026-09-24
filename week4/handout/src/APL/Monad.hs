@@ -56,22 +56,32 @@ data Free e a
   | Free (e (Free e a))
 
 instance (Functor e) => Functor (Free e) where
-  fmap f (Pure x) = error "TODO"
-  fmap f (Free g) = error "TODO"
+  fmap f (Pure x) = Pure (f x)
+  fmap f (Free g) = Free $ fmap (fmap f) g
 
 instance (Functor e) => Applicative (Free e) where
   pure = Pure
   (<*>) = ap
 
 instance (Functor e) => Monad (Free e) where
-  Pure x >>= f = error "TODO"
-  Free g >>= f = error "TODO"
+  Pure x >>= f = f x
+  Free g >>= f = Free $ h <$> g
+    where
+      h x = x >>= f
 
 data EvalOp a
   = ReadOp (Env -> a)
+  | StateGetOp (State -> a)
+  | StatePutOp State a
+  | PrintOp String a
+  | ErrorOp Error
 
 instance Functor EvalOp where
-  fmap f (ReadOp k) = error "TODO"
+  fmap f (ReadOp k) = ReadOp $ f . k
+  fmap f (StateGetOp k) = StateGetOp $ f . k
+  fmap f (StatePutOp s m) = StatePutOp s $ f m
+  fmap f (PrintOp p m) = PrintOp p $ f m
+  fmap _ (ErrorOp e) = ErrorOp e
 
 type EvalM a = Free EvalOp a
 
@@ -80,25 +90,30 @@ askEnv = Free $ ReadOp $ \env -> pure env
 
 modifyEffects :: (Functor e, Functor h) => (e (Free e a) -> h (Free e a)) -> Free e a -> Free h a
 modifyEffects _ (Pure x) = Pure x
-modifyEffects g (Free e) = error "TODO"
+modifyEffects g (Free e) = Free $ modifyEffects g <$> g e
 
 localEnv :: (Env -> Env) -> EvalM a -> EvalM a
-localEnv = error "TODO"
+localEnv f = modifyEffects g
+  where
+    g (ReadOp k) = ReadOp $ k . f
+    g op = op
 
 getState :: EvalM State
-getState = error "TODO"
+getState = Free $ StateGetOp $ \st -> pure st
 
 putState :: State -> EvalM ()
-putState = error "TODO"
+putState st = Free $ StatePutOp st $ pure ()
 
 modifyState :: (State -> State) -> EvalM ()
-modifyState = error "TODO"
+modifyState f = do
+  s <- getState
+  putState $ f s
 
 evalPrint :: String -> EvalM ()
-evalPrint = error "TODO"
+evalPrint p = Free $ PrintOp p $ pure ()
 
 failure :: String -> EvalM a
-failure = error "TODO"
+failure = Free . ErrorOp
 
 catch :: EvalM a -> EvalM a -> EvalM a
 catch = error "To be completed in assignment 4."
