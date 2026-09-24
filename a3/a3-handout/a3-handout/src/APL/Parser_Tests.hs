@@ -32,6 +32,7 @@ tests =
           parserTest "123 " $ CstInt 123,
           parserTestFail "123f",
           parserTest "true" $ CstBool True,
+          parserTest "truex" $ Var "truex",
           parserTest "false" $ CstBool False
         ],
       testGroup

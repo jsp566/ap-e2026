@@ -65,11 +65,11 @@ lKeyword :: String -> Parser ()
 lKeyword s = lexeme $ void $ try $ chunk s <* notFollowedBy (satisfy isAlphaNum)
 
 lKeywordMaybeFollowedByAlpha :: String -> Parser ()
-lKeywordMaybeFollowedByAlpha s = lexeme $ void $ try $ chunk s
+lKeywordMaybeFollowedByAlpha s = lexeme $ void $ chunk s
 
 lPrintString :: Parser String
 lPrintString =
-  lexeme $ try $ do
+  lexeme $ do
   _ <- satisfy (=='"')
   cs <- some $ satisfy (/='"')
   _ <- satisfy (=='"')
@@ -106,7 +106,8 @@ pFExp = pAtom >>= chain
 pLExp :: Parser Exp
 pLExp =
   choice
-    [ If
+    [ pFExp,
+      If
         <$> (lKeyword "if" *> pExp)
         <*> (lKeyword "then" *> pExp)
         <*> (lKeyword "else" *> pExp),
@@ -127,23 +128,22 @@ pLExp =
         <*> ((,) 
           <$> (lKeyword "for" *> lVName)
           <*> (lKeyword "<" *> pExp))
-        <*> (lKeyword "do" *> pExp),
-      pFExp
+        <*> (lKeyword "do" *> pExp)
     ]
 
 
 pExp4 :: Parser Exp
 pExp4 =
   choice
-    [ Print
+    [ pLExp,
+      Print
         <$> (lKeyword "print" *> lPrintString)
         <*> pAtom,
       KvGet
         <$> (lKeyword "get" *> pAtom),
       KvPut
         <$> (lKeyword "put" *> pAtom)
-        <*> pAtom,
-      pLExp
+        <*> pAtom
     ]
 
 pExp3 :: Parser Exp
