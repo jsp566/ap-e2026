@@ -71,7 +71,7 @@ lPrintString :: Parser String
 lPrintString =
   lexeme $ do
   _ <- satisfy (=='"')
-  cs <- some $ satisfy (/='"')
+  cs <- many $ satisfy (/='"')
   _ <- satisfy (=='"')
   pure cs
 
