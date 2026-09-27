@@ -33,6 +33,7 @@ tests =
           parserTestFail "123f",
           parserTest "true" $ CstBool True,
           parserTest "truex" $ Var "truex",
+          parserTest "falsex" $ Var "falsex",
           parserTest "false" $ CstBool False
         ],
       testGroup
@@ -143,6 +144,7 @@ tests =
         [ parserTest "put x y" $ KvPut (Var "x") (Var "y"),
           parserTest "get x + y" $ Add (KvGet (Var "x")) (Var "y"),
           parserTest "getx" $ Var "getx",
+          parserTest "getx x" $ Apply (Var "getx") (Var "x"),
           parserTest "print \"foo\" x" $ Print "foo" (Var "x"),
           parserTest "print \"hello world\" x" $
             Print "hello world" (Var "x"),
