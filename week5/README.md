@@ -5,7 +5,8 @@ example of using monads.
 
 ## Slides and Material
 
-## TBA
+* Slides on property-based testing, and the associated Haskell code, will be
+  published Tuesday evening.
 
 ## Suggested Reading
 
@@ -13,7 +14,7 @@ example of using monads.
 
 * [QuickCheck manual](https://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html)
 
-* [Course Notes Chapter 6](https://diku-dk.github.io/ap-notes/chapter_6.html)
+* [Course Notes Chapter 5](https://diku-dk.github.io/ap-notes/chapter_5.html)
 
 ### Going Beyond
 
@@ -30,20 +31,20 @@ Your starting point is found in [handout/](handout/) and complete solutions are
 in [solution/](solution/). For some of the tasks, partial or complete solutions
 are also included inline below.
 
-Note that the handout code contains a number of bugs! This is intentional and
-part of your task will be discover and fix these bugs.
+Note that the handout evaluator does not satisfy all of the properties you will
+state below. Part of your task is to discover this by testing, and then to fix it.
 
 ### Code Overview
 
 The handout code is an amalgam of previous weeks, with some modifications.
 In particular:
 * `APL.AST` contains the familiar type of expressions. It has an additional
-  method `subExp` for enumerating the subexpressions of an expressions.
+  function `subExp` for enumerating the subexpressions of an expression.
 * `APL.Error` is a new module defining a type of errors, which we will use
   instead of strings when reporting errors.
 * `APL.Eval` is the evaluator from week 2, modified to use the new error type.
-* `APL.Check` is the type checker from week 2, where `checkExp` is modified
-  to return a *list* of possible errors.
+* `APL.Check` is a new module containing a checker for APL, whose `checkExp`
+  returns a *list* of the errors that evaluating the expression might produce.
 * `APL.Tests` is a new module where you will be using QuickCheck.
 
 ### A Basic Generator
@@ -51,8 +52,8 @@ In particular:
 We will start by making a simple generator that generates a small subset of
 expressions, namely lambda expressions and variables.
 
-1. Define `genVar :: Gen VName` so that it generates valid variables names
-   (i.e. those accepted by the grammar). You do not need to able to generate
+1. Define `genVar :: Gen VName` so that it generates valid variable names
+   (i.e. those accepted by the grammar). You do not need to be able to generate
    all possible variable names.
 
 2. Define `genExp :: Gen Exp` so that it generates expressions built using the
@@ -60,7 +61,7 @@ expressions, namely lambda expressions and variables.
 
 3. Use `sample` from QuickCheck to see examples of output from `genVar` and `genExp`.
 
-#### Hints
+#### Hint
 
 You might find the following QuickCheck functions useful: `elements`, `oneof`, `listOf`.
 
@@ -88,13 +89,13 @@ Then run `sample genVar` and `sample genExp` in ghci.
 Extend `genExp` so that it can also produce `Apply` expressions. Try out the
 generator again using `sample`. What is the problem?
 
-In order to fix this problem `genExp` take a parameter specifying the size of
-its output. Change the type signature to `genExp :: Int -> Gen exp`. The
+In order to fix this problem `genExp` takes a parameter that specifies the size of
+its output. Change the type signature to `genExp :: Int -> Gen Exp`. The
 intention is that `genExp size` must generate expressions with *at most* `size`
 constructors in them. For example, `Apply (Apply (Var "f") (Var "x")) (Var "y")`
 has a total of 5 constructors.
 
-Using `sized :: (Int -> Gen a) -> Gen a)` from QuickCheck you now have a better
+Using `sized :: (Int -> Gen a) -> Gen a` from QuickCheck you now have a better
 expression generator, `sized genExp`. Try sampling again; is the problem solved?
 
 #### Hints
@@ -136,7 +137,8 @@ to be an instance of `Arbitrary` with `arbitrary = sized genExp`.
 ### Associativity
 
 Addition of integers obeys associativity, meaning that `(n1 + n2) + n3 == n1 + (n2 + n3)`
-for all integers `n1`, `n2` and `n3`. Declare a function `prop_integerAddAssoc :: Integer -> Integer -> Integer -> Bool`
+for all integers `n1`, `n2` and `n3`.
+Declare a function `prop_integerAddAssoc :: Integer -> Integer -> Integer -> Bool`
 in `APL.Tests` which expresses this fact. Then run `quickCheck prop_integerAddAssoc` to test this.
 
 What about addition in APL? Do `Add (Add e1 e2) e3` and `Add e1 (Add e2 e3)` always evaluate to the same result?
@@ -164,15 +166,17 @@ Many of the counterexamples for `prop_aplAddAssoc` will be somewhat large, makin
 In order to address this we will implement *shrinking* for `Exp` by giving a
 definition for `shrink` in the `Arbitrary` instance for `Exp`.
 
-Given an expression `e` we want `shrink e` to return the list of possible
-*shrinks* of `e`, i.e. expressions that resemble `e` but are slightly simpler.
+Given an expression `e` we want `shrink e` to return a list of possible
+*shrinks* of `e`, i.e. expressions that resemble `e` but are smaller.
 In general the possible shrinks of an expression should include its direct
 subexpressions as well as a version of the expression where exactly one of its
-arguments have been shrunk. For instance `Add e1 e2` shrinks to either
+arguments has been shrunk. For instance `Add e1 e2` shrinks to any of
+
 * `e1`
 * `e2`
 * `Add e1' e2` when `e1` shrinks to `e1'`
 * `Add e1 e2'` when `e2` shrinks to `e2'`
+
 Arguments of types other than `Exp` simply use their respective `shrink` methods.
 For instance `Var name` shrinks to `Var name'` when `name` shrinks to `name'`.
 
@@ -204,9 +208,13 @@ Running `quickCheck prop_aplAddAssoc` should now generate a smaller counterexamp
 
 ### Fixing Associativity
 
-Suppose that we *do* want associativity of addition in APL (this is not an
-essential property for a programming language, but we will pretend to care).
-Modify the evaluator so `prop_aplAddAssoc` passes.
+Suppose that we *do* want associativity of addition in APL. Guaranteeing the
+validity of equational properties such as associativity, commutativity, inlining
+and the monad laws makes it possible for users, tools and compilers to reason
+about and optimise programs effectively and efficiently. Alas, many programming
+languages happen not to be *designed* that way, and neither is ours. But let us
+pretend for a moment that we do care. Modify the evaluator so that
+`prop_aplAddAssoc` passes.
 
 #### Solution (partial)
 

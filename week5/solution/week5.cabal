@@ -1,5 +1,5 @@
 cabal-version:      3.0
-name:               week6
+name:               week5
 version:            1.0.0.0
 build-type:         Simple
 
@@ -20,7 +20,7 @@ library
         APL.Check
         APL.Tests
 
-test-suite week6-test
+test-suite week5-test
     import: common
     type: exitcode-stdio-1.0
     main-is: runtests.hs
@@ -28,5 +28,5 @@ test-suite week6-test
         base
       , tasty
       , tasty-quickcheck
-      , week6
+      , week5
 

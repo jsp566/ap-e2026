@@ -76,8 +76,8 @@ Haskell programs that solve real problems.
 
 The course consists of two lectures and two exercise classes every week.
 
-The lectures are on Tuesday 10:00-12:00 in Aud 04 at HCØ and Thursday
-13:00-15:00 also in Aud 04.
+The lectures are on Tuesday 10:15-12:00 in Auditorium 4 at HCØ and Thursday
+13:15-15:00 also in Auditorium 4.
 
 The exercise classes are both on Thursday, at 10:00-12:00 and 15:00-17:00
 respectively.
