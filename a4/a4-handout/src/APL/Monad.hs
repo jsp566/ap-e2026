@@ -82,10 +82,10 @@ instance Functor EvalOp where
   fmap f (ReadOp k) = ReadOp $ f . k
   fmap f (PrintOp p m) = PrintOp p $ f m
   fmap _ (ErrorOp e) = ErrorOp e
-  fmap f (TryCatchOp m1 m2 k) = error "TODO"
-  fmap f (KvGetOp key k) = error "TODO"
-  fmap f (KvPutOp key val m) = error "TODO"
-  fmap f (TransactionOp m k) = error "TODO"
+  fmap f (TryCatchOp m1 m2 k) = TryCatchOp m1 m2 $ f . k
+  fmap f (KvGetOp key k) = KvGetOp key $ f . k
+  fmap f (KvPutOp key val m) = KvPutOp key val $ f m
+  fmap f (TransactionOp m k) = TransactionOp m $ f . k
 
 type EvalM a = Free EvalOp a
 
@@ -106,7 +106,7 @@ localEnv f = modifyEffects g
     g (ReadOp k) = ReadOp $ k . f
     -- TODO: add cases for TryCatchOp, TransactionOp, and as necessary for the
     -- effects you add for looping.
-    g (TryCatchOp m1 m2 k) = error "TODO"
+    g (TryCatchOp m1 m2 k) = TryCatchOp (localEnv f m1) (localEnv f m2) k
     g (KvGetOp key k) = error "TODO"
     g (KvPutOp key val m) = error "TODO"
     g (TransactionOp m k) = error "TODO"
@@ -119,16 +119,16 @@ failure :: String -> EvalM a
 failure = Free . ErrorOp
 
 catch :: EvalM Val -> EvalM Val -> EvalM Val
-catch = error "TODO"
+catch m1 m2 = Free $ TryCatchOp m1 m2 $ \val -> pure val
 
 evalKvGet :: Val -> EvalM Val
-evalKvGet = error "TODO"
+evalKvGet key = Free $ KvGetOp key $ \val -> pure val
 
 evalKvPut :: Val -> Val -> EvalM ()
-evalKvPut = error "TODO"
+evalKvPut key val = Free $ KvPutOp key val $ pure ()
 
 transaction :: EvalM Val -> EvalM Val
-transaction = error "TODO"
+transaction m = Free $ TransactionOp m $ \val -> pure val
 
 -- | Enclose a computation @m@ such that if a 'breakLoop' is executed in @m@,
 -- execution will return here.

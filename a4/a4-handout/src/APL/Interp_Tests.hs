@@ -69,7 +69,7 @@ pureTests =
       --
       testCase "TryCatchOp Example 3" $
         eval' (TryCatch (Eql (CstInt 0) (CstBool True)) (Div (CstInt 1) (CstInt 0)))
-          @?= ([], Right (ValInt 1)),
+          @?= ([], Left "Division by zero"),
       -- 
       --
       testCase "Key-value Store Example 1" $
