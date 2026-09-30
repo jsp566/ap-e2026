@@ -25,4 +25,6 @@ data Exp
   | Print String Exp
   | KvPut Exp Exp
   | KvGet Exp
+  | Transaction Exp
+  | Break Exp
   deriving (Eq, Show)

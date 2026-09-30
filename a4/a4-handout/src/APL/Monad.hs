@@ -73,6 +73,10 @@ data EvalOp a
   = ReadOp (Env -> a)
   | PrintOp String a
   | ErrorOp Error
+  | TryCatchOp (EvalM Val) (EvalM Val) (Val-> a)
+  | KvGetOp Val (Val-> a)
+  | KvPutOp Val Val a
+  | TransactionOp (EvalM Val) (Val-> a)
 
 instance Functor EvalOp where
   fmap f (ReadOp k) = ReadOp $ f . k
