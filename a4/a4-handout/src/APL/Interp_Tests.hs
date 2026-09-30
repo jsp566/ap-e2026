@@ -77,6 +77,11 @@ pureTests =
           (Free $ (KvPutOp (ValInt 0) (ValInt 1)) (Free $ KvGetOp (ValInt 0) $ \val-> pure val))
           @?= ([],Right (ValInt 1)),
       --
+      testCase "Key-value Store Example 2" $
+        runEval 
+          (Free $ KvGetOp (ValInt 0) $ \val-> pure val)
+          @?= ([],Left "Invalid key: ValInt 0"),
+      --
       testCase "Transaction Example 1" $
         eval' (
           Let "_" (Transaction (KvPut (CstInt 0) (CstInt 1))) 
@@ -130,7 +135,7 @@ ioTests :: TestTree
 ioTests =
   testGroup
     "IO interpreter"
-    [ testCase "print" $ do
+    [ testCase "print 1" $ do
         let s1 = "Lalalalala"
             s2 = "Weeeeeeeee"
         (out, res) <-

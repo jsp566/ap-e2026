@@ -66,11 +66,33 @@ runEvalIO evalm = do
       putStrLn p
       runEvalIO' r db m
     runEvalIO' _ _ (Free (ErrorOp e)) = pure $ Left e
-    runEvalIO' _ _ (Free (TryCatchOp m1 m2 k)) = 
-      error "TODO"
-    runEvalIO' _ _ (Free (KvGetOp key k)) = 
-      error "TODO"
-    runEvalIO' _ _ (Free (KvPutOp key val m)) = 
-      error "TODO"
-    runEvalIO' _ _ (Free (TransactionOp m k)) = 
-      error "TODO"
+    runEvalIO' r db (Free (TryCatchOp m1 m2 k)) = do
+      res <- runEvalIO' r db m1
+      case res of
+        Left _ -> runEvalIO' r db (m2 >>= k)
+        Right val -> runEvalIO' r db (k val)
+    runEvalIO' r db (Free (KvGetOp key k)) = do
+      Right st <- readDB db
+      case lookup key st of
+        Just val -> runEvalIO' r db $ k val
+        Nothing -> do
+          s <- prompt ("Invalid key: " ++ show key ++ ". Enter a replacement: ")
+          case readVal s of
+            Just newval -> runEvalIO' r db $ k newval
+            Nothing -> pure $ Left ("Invalid value input: " ++ s)
+    runEvalIO' r db (Free (KvPutOp key val m)) = do
+      Right s <- readDB db
+      writeDB db ((key, val) : s)
+      runEvalIO' r db m
+    runEvalIO' r db (Free (TransactionOp m k)) = do
+      Right newres <- withTempDB (\newdb -> do
+        copyDB db newdb
+        res <- runEvalIO' r newdb m
+        case res of 
+          Left err -> pure $ Left err
+          Right val -> do 
+            copyDB newdb db
+            pure $ Right val)
+      runEvalIO' r db $ k newres
+
+      

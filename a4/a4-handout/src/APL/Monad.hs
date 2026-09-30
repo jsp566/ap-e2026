@@ -104,12 +104,8 @@ localEnv :: (Env -> Env) -> EvalM a -> EvalM a
 localEnv f = modifyEffects g
   where
     g (ReadOp k) = ReadOp $ k . f
-    -- TODO: add cases for TryCatchOp, TransactionOp, and as necessary for the
-    -- effects you add for looping.
     g (TryCatchOp m1 m2 k) = TryCatchOp (localEnv f m1) (localEnv f m2) k
-    g (KvGetOp key k) = error "TODO"
-    g (KvPutOp key val m) = error "TODO"
-    g (TransactionOp m k) = error "TODO"
+    g (TransactionOp m k) = TransactionOp (localEnv f m) k
     g op = op
 
 evalPrint :: String -> EvalM ()

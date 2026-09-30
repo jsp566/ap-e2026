@@ -17,12 +17,21 @@ runEval = runEval' envEmpty stateInitial
         (p, Left _) -> 
           let (ps, newres) = runEval' r s (m2 >>= k)
           in (p ++ ps, newres)
-        (p, Right res) -> 
-          let (ps, newres) = runEval' r s (k res)
+        (p, Right _) -> 
+          let (ps, newres) = runEval' r s (m1 >>= k)
           in (p ++ ps, newres)
-    runEval' _ _ (Free (KvGetOp key k)) = 
-      error "TODO"
-    runEval' _ _ (Free (KvPutOp key val m)) = 
-      error "TODO"
-    runEval' _ _ (Free (TransactionOp m k)) = 
-      error "TODO"
+    runEval' r s (Free (KvGetOp key k)) = 
+      case lookup key s of
+        Just val -> runEval' r s $ k val
+        Nothing -> ([], Left ("Invalid key: " ++ show key))
+    runEval' r s (Free (KvPutOp key val m)) = 
+      let s' = (key, val) : s
+      in runEval' r s' m
+    runEval' r s (Free (TransactionOp m k)) =
+      case runEval' r s m of
+        (p, Left err) -> (p, Left err)
+        (p, Right _) -> 
+          let (ps, newres) = runEval' r s (m >>= k)
+          in (p ++ ps, newres)
+
+      
