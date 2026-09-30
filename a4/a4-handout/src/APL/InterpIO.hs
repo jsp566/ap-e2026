@@ -66,3 +66,7 @@ runEvalIO evalm = do
       putStrLn p
       runEvalIO' r db m
     runEvalIO' _ _ (Free (ErrorOp e)) = pure $ Left e
+    runEvalIO' _ _ (Free (TryCatchOp m1 m2 k)) = error "TODO"
+    runEvalIO' _ _ (Free (KvGetOp key k)) = error "TODO"
+    runEvalIO' _ _ (Free (KvPutOp key val m)) = error "TODO"
+    runEvalIO' _ _ (Free (TransactionOp m k)) = error "TODO"

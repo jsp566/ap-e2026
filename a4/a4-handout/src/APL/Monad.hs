@@ -82,6 +82,10 @@ instance Functor EvalOp where
   fmap f (ReadOp k) = ReadOp $ f . k
   fmap f (PrintOp p m) = PrintOp p $ f m
   fmap _ (ErrorOp e) = ErrorOp e
+  fmap f (TryCatchOp m1 m2 k) = error "TODO"
+  fmap f (KvGetOp key k) = error "TODO"
+  fmap f (KvPutOp key val m) = error "TODO"
+  fmap f (TransactionOp m k) = error "TODO"
 
 type EvalM a = Free EvalOp a
 

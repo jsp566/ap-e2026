@@ -12,3 +12,7 @@ runEval = runEval' envEmpty stateInitial
       let (ps, res) = runEval' r s m
        in (p : ps, res)
     runEval' _ _ (Free (ErrorOp e)) = ([], Left e)
+    runEval' _ _ (Free (TryCatchOp m1 m2 k)) = error "TODO"
+    runEval' _ _ (Free (KvGetOp key k)) = error "TODO"
+    runEval' _ _ (Free (KvPutOp key val m)) = error "TODO"
+    runEval' _ _ (Free (TransactionOp m k)) = error "TODO"

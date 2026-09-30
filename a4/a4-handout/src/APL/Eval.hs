@@ -87,3 +87,26 @@ eval (Apply e1 e2) = do
       failure "Cannot apply non-function"
 eval (TryCatch e1 e2) =
   eval e1 `catch` eval e2
+eval (Print s e) = do
+  v <- eval e
+  case v of 
+    (ValInt i) -> do 
+      evalPrint (s ++ ": " ++ show i)
+      pure $ ValInt i
+    (ValBool b) -> do 
+      evalPrint (s ++ ": " ++ show b)
+      pure $ ValBool b
+    (ValFun f_env var body) -> do 
+      evalPrint (s ++ ": " ++ "#<fun>")
+      pure (ValFun f_env var body)
+eval (KvPut k_exp v_exp) = do
+  k <- eval k_exp
+  v <- eval v_exp
+  evalKvPut k v
+  pure v
+eval (KvGet k_exp) = do
+  k <- eval k_exp
+  v <- evalKvGet k
+  pure v
+eval (Transaction e) = error "TODO"
+eval (Break e) = error "TODO"
