@@ -59,7 +59,8 @@ pureTests =
           @?= ([], Left "Division by zero"),
       --
       testCase "TryCatchOp Example 1" $
-        eval' (TryCatch (Div (CstInt 1) (CstInt 0)) (CstInt 1))
+        runEval 
+          (Free $ TryCatchOp (failure "Oh no!") (pure $ ValInt 1) pure)
           @?= ([], Right (ValInt 1)),
       --
       testCase "TryCatchOp Example 2" $
@@ -72,9 +73,8 @@ pureTests =
       -- 
       --
       testCase "Key-value Store Example 1" $
-        eval' ( 
-          Let "x" (KvPut (CstInt 0) (CstInt 1)) 
-          (KvGet (CstInt 0)))
+        runEval 
+          (Free $ (KvPutOp (ValInt 0) (ValInt 1)) (Free $ KvGetOp (ValInt 0) $ \val-> pure val))
           @?= ([],Right (ValInt 1)),
       --
       testCase "Transaction Example 1" $
@@ -123,7 +123,7 @@ pureTests =
       --
       testCase "Break Example 2" $
         eval' (Break (CstBool True))
-          @?= ([],Left "Break␣outside␣loop")
+          @?= ([],Left "Break outside loop")
     ]
 
 ioTests :: TestTree
@@ -138,16 +138,24 @@ ioTests =
             runEvalIO $ do
               evalPrint s1
               evalPrint s2
-        (out, res) @?= ([s1, s2], Right ())
+        (out, res) @?= ([s1, s2], Right ()),
         -- NOTE: This test will give a runtime error unless you replace the
         -- version of `eval` in `APL.Eval` with a complete version that supports
         -- `Print`-expressions. Uncomment at your own risk.
-        -- testCase "print 2" $ do
-        --    (out, res) <-
-        --      captureIO [] $
-        --        evalIO' $
-        --          Print "This is also 1" $
-        --            Print "This is 1" $
-        --              CstInt 1
-        --    (out, res) @?= (["This is 1: 1", "This is also 1: 1"], Right $ ValInt 1)
+        testCase "print 2" $ do
+            (out, res) <-
+              captureIO [] $
+                evalIO' $
+                  Print "This is also 1" $
+                    Print "This is 1" $
+                      CstInt 1
+            (out, res) @?= (["This is 1: 1", "This is also 1: 1"], Right $ ValInt 1),
+        --
+        testCase "Missing key test" $ do
+            (_, res) <-
+              captureIO ["ValInt 1"] $
+                runEvalIO $
+                  Free $ KvGetOp (ValInt 0) $ \val-> pure val
+            res @?= Right (ValInt 1)
+
     ]
