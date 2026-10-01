@@ -161,6 +161,77 @@ ioTests =
               captureIO ["ValInt 1"] $
                 runEvalIO $
                   Free $ KvGetOp (ValInt 0) $ \val-> pure val
-            res @?= Right (ValInt 1)
+            res @?= Right (ValInt 1),
+        --
+      testCase "TryCatchOp Example 1" $
+        runEval 
+          (Free $ TryCatchOp (failure "Oh no!") (pure $ ValInt 1) pure)
+          @?= ([], Right (ValInt 1)),
+      --
+      testCase "TryCatchOp Example 2" $
+        eval' (TryCatch (CstInt 5) (Div (CstInt 1) (CstInt 0)))
+          @?= ([], Right (ValInt 5)),
+      --
+      testCase "TryCatchOp Example 3" $
+        eval' (TryCatch (Eql (CstInt 0) (CstBool True)) (Div (CstInt 1) (CstInt 0)))
+          @?= ([], Left "Division by zero"),
+      -- 
+      --
+      testCase "Key-value Store Example 1" $
+        runEval 
+          (Free $ (KvPutOp (ValInt 0) (ValInt 1)) (Free $ KvGetOp (ValInt 0) $ \val-> pure val))
+          @?= ([],Right (ValInt 1)),
+      --
+      testCase "Key-value Store Example 2" $
+        runEval 
+          (Free $ KvGetOp (ValInt 0) $ \val-> pure val)
+          @?= ([],Left "Invalid key: ValInt 0"),
+      --
+      testCase "Transaction Example 1" $
+        eval' (
+          Let "_" (Transaction (KvPut (CstInt 0) (CstInt 1))) 
+          (KvGet (CstInt 0)))
+          @?= ([],Right (ValInt 1)),
+      --
+      testCase "Transaction Example 2" $
+        eval' (
+          TryCatch (Transaction (Let "_" (KvPut (CstInt 0) (CstBool False)) (Var "die"))) 
+          (KvGet (CstInt 0)))
+          @?= ([],Left "Invalid key: ValInt 0"),
+      --
+      testCase "Transaction Example 3" $
+        eval' (
+          Transaction (Let "_" (KvPut (CstInt 0) (CstBool False)) (Var "die")))
+          @?= ([],Left "Unknown variable: die"),
+      --
+      testCase "Transaction Example 4" $
+        eval' (
+          Transaction (Let "_" (KvPut (Print "foo" (CstInt 0)) (CstBool False)) (Var "die")))
+          @?= (["foo: 0"],Left "Unknown variable: die"),
+      --
+      testCase "Transaction Example 5" $
+        eval' (
+          Let "_" (Transaction
+            (Let "_" (KvPut (CstInt 0) (CstInt 1))
+              (TryCatch (Transaction (Let "_" (KvPut (CstInt 0) (CstBool False)) (Var "die")))
+                (CstBool True))))
+          (KvGet (CstInt 0)))
+          @?= ([],Right (ValInt 1)),
+      --
+      testCase "Transaction Example 6" $
+        eval' (
+          Let "_" (TryCatch (Transaction
+            (Transaction (Let "_" (KvPut (CstInt 0) (CstBool False)) (Var "die"))))
+              (CstBool True))
+          (KvGet (CstInt 0)))
+          @?= ([],Left "Invalid key: ValInt 0"),
 
+
+      testCase "Break Example 1" $
+        eval' (ForLoop ("p", CstInt 0) ("i", CstInt 100) $ Let "_" (Break (CstBool True)) (Var "i"))
+          @?= ([],Right (ValBool True)),
+      --
+      testCase "Break Example 2" $
+        eval' (Break (CstBool True))
+          @?= ([],Left "Break outside loop")
     ]

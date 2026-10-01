@@ -13,13 +13,12 @@ runEval = runEval' envEmpty stateInitial
        in (p : ps, res)
     runEval' _ _ (Free (ErrorOp e)) = ([], Left e)
     runEval' r s (Free (TryCatchOp m1 m2 k)) = 
-      case runEval' r s m1 of
-        (p, Left _) -> 
-          let (ps, newres) = runEval' r s (m2 >>= k)
-          in (p ++ ps, newres)
-        (p, Right _) -> 
-          let (ps, newres) = runEval' r s (m1 >>= k)
-          in (p ++ ps, newres)
+      let (p, res) = runEval' r s m1
+          newm = case res of
+            Left _ -> m2 >>= k
+            Right val -> k val
+          (ps, newres) = runEval' r s newm
+      in (p ++ ps, newres)
     runEval' r s (Free (KvGetOp key k)) = 
       case lookup key s of
         Just val -> runEval' r s $ k val
@@ -28,10 +27,6 @@ runEval = runEval' envEmpty stateInitial
       let s' = (key, val) : s
       in runEval' r s' m
     runEval' r s (Free (TransactionOp m k)) =
-      case runEval' r s m of
-        (p, Left err) -> (p, Left err)
-        (p, Right _) -> 
-          let (ps, newres) = runEval' r s (m >>= k)
-          in (p ++ ps, newres)
+      runEval' r s (m >>= k)
 
       
