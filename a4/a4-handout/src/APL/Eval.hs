@@ -109,4 +109,4 @@ eval (KvGet k_exp) = do
   v <- evalKvGet k
   pure v
 eval (Transaction e) = eval e
-eval (Break e) = error "TODO"
+eval (Break e) = eval e
