@@ -305,7 +305,7 @@ pureTests =
                 (CstBool True))
               (KvGet (CstInt 0))
           )
-          @?= ([], Left "Invalid key: ValInt 0")
+          @?= ([], Left "Invalid key: ValInt 0"),
 
       --
 

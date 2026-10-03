@@ -71,8 +71,6 @@ runEvalIO evalm = do
       case res of
         Left _ -> runEvalIO' r db (m2 >>= k)
         Right val -> runEvalIO' r db (k val)
-
-
     runEvalIO' r db (Free (KvGetOp key k)) = do
       Right st <- readDB db
       case lookup key st of
@@ -86,10 +84,6 @@ runEvalIO evalm = do
       Right s <- readDB db
       writeDB db ((key, val) : s)
       runEvalIO' r db m
-      
-
-
-
     runEvalIO' r db (Free (TransactionOp m k)) =
       withTempDB $ \temp -> do
         copyDB db temp

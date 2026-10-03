@@ -119,16 +119,16 @@ failure :: String -> EvalM a
 failure = Free . ErrorOp
 
 catch :: EvalM Val -> EvalM Val -> EvalM Val
-catch m1 m2 = Free $ TryCatchOp m1 m2 $ \val -> pure val
+catch m1 m2 = Free $ TryCatchOp m1 m2 pure
 
 evalKvGet :: Val -> EvalM Val
-evalKvGet key = Free $ KvGetOp key $ \val -> pure val
+evalKvGet key = Free $ KvGetOp key $ pure
 
 evalKvPut :: Val -> Val -> EvalM ()
 evalKvPut key val = Free $ KvPutOp key val $ pure ()
 
 transaction :: EvalM Val -> EvalM Val
-transaction m = Free $ TransactionOp m $ \val -> pure val
+transaction m = Free $ TransactionOp m $ pure
 
 -- | Enclose a computation @m@ such that if a 'breakLoop' is executed in @m@,
 -- execution will return here.
