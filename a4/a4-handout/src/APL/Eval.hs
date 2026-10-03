@@ -108,5 +108,5 @@ eval (KvGet k_exp) = do
   k <- eval k_exp
   v <- evalKvGet k
   pure v
-eval (Transaction e) = eval e
+eval (Transaction e) = transaction $ eval e
 eval (Break e) = eval e
