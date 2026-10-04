@@ -57,20 +57,24 @@ withTempDB m = do
 runEvalIO :: EvalM a -> IO (Either Error a)
 runEvalIO evalm = do
   clearDB
-  runEvalIO' envEmpty dbFile evalm
+  result <- runEvalIO' envEmpty dbFile evalm
+  pure $ case result of
+    Left _ -> Left "Break outside loop"
+    Right res -> res
   where
-    runEvalIO' :: Env -> FilePath -> EvalM a -> IO (Either Error a)
-    runEvalIO' _ _ (Pure x) = pure $ pure x
+    runEvalIO' :: Env -> FilePath -> EvalM a -> IO (Either Val (Either Error a))
+    runEvalIO' _ _ (Pure x) = pure $ pure (pure x)
     runEvalIO' r db (Free (ReadOp k)) = runEvalIO' r db $ k r
     runEvalIO' r db (Free (PrintOp p m)) = do
       putStrLn p
       runEvalIO' r db m
-    runEvalIO' _ _ (Free (ErrorOp e)) = pure $ Left e
+    runEvalIO' _ _ (Free (ErrorOp e)) = pure $ Right (Left e)
     runEvalIO' r db (Free (TryCatchOp m1 m2 k)) = do
       res <- runEvalIO' r db m1
       case res of
-        Left _ -> runEvalIO' r db (m2 >>= k)
-        Right val -> runEvalIO' r db (k val)
+        Left val -> pure $ Left val
+        Right (Left _) -> runEvalIO' r db (m2 >>= k)
+        Right (Right val) -> runEvalIO' r db (k val)
     runEvalIO' r db (Free (KvGetOp key k)) = do
       Right st <- readDB db
       case lookup key st of
@@ -79,7 +83,7 @@ runEvalIO evalm = do
           s <- prompt ("Invalid key: " ++ show key ++ ". Enter a replacement: ")
           case readVal s of
             Just newval -> runEvalIO' r db $ k newval
-            Nothing -> pure $ Left ("Invalid value input: " ++ s)
+            Nothing -> pure $ Right (Left ("Invalid value input: " ++ s))
     runEvalIO' r db (Free (KvPutOp key val m)) = do
       Right s <- readDB db
       writeDB db ((key, val) : s)
@@ -89,11 +93,18 @@ runEvalIO evalm = do
         copyDB db temp
         result <- runEvalIO' r temp m
         case result of
-          Left err ->
-            pure $ Left err
-
-          Right val -> do
+          Right (Right val) -> do
             copyDB temp db
             runEvalIO' r db (k val)
-    runEvalIO' r db (Free (LoopingOp m k)) = undefined
-    runEvalIO' r db (Free (BreakLoopOp val m)) = undefined
+          Right (Left err) -> pure $ Right (Left err)
+          Left val -> do
+            copyDB temp db
+            pure $ Left val
+    runEvalIO' r db (Free (LoopingOp m k)) = do
+      result <- runEvalIO' r db m
+      case result of
+        Right (Left err) -> pure $ Right (Left err)
+        Right (Right val) -> runEvalIO' r db (k val)
+        Left val -> runEvalIO' r db (k val)
+    runEvalIO' _ _ (Free (BreakLoopOp val _)) =
+      pure $ Left val

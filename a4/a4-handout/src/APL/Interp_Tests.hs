@@ -328,7 +328,26 @@ pureTests =
           (ForLoop
             ("p", CstInt 0)
             ("i", CstInt 100)
-            (Break (CstInt 42)))
+            (If (Eql (Var "i") (CstInt 42)) (Break (Var "i")) (Var "p")))
+          @?= ([], Right (ValInt 42)),
+      
+      testCase "Double Break preserves output before break" $
+        eval'
+          (ForLoop
+            ("p", CstInt 0)
+            ("i", CstInt 100)
+            (Let
+              "_"
+              (Print "before break" (CstInt 0))
+              (Break (CstBool True))))
+          @?= (["before break: 0"], Right (ValBool True)),
+
+      testCase "Double Break" $
+        eval'
+          (ForLoop
+            ("p", CstInt 0)
+            ("i", CstInt 100)
+            (If (Eql (Var "i") (CstInt 42)) (Break (Break (Var "i"))) (Var "p")))
           @?= ([], Right (ValInt 42))
     ]
 
@@ -471,21 +490,21 @@ ioTests =
           captureIO ["ValInt 5"] $
             runEvalIO $
               evalKvGet (ValInt 0)
-        (out, res) @?= ([], Right (ValInt 5)),
+        (out, res) @?= (["Invalid key: ValInt 0. Enter a replacement: "], Right (ValInt 5)),
 
       testCase "Missing key with boolean replacement" $ do
         (out, res) <-
           captureIO ["ValBool True"] $
             runEvalIO $
               evalKvGet (ValInt 0)
-        (out, res) @?= ([], Right (ValBool True)),
+        (out, res) @?= (["Invalid key: ValInt 0. Enter a replacement: "], Right (ValBool True)),
 
       testCase "Missing key with invalid replacement" $ do
         (out, res) <-
           captureIO ["lol"] $
             runEvalIO $
               evalKvGet (ValInt 0)
-        (out, res) @?= ([], Left "Invalid value input: lol"),
+        (out, res) @?= (["Invalid key: ValInt 0. Enter a replacement: "], Left "Invalid value input: lol"),
 
       testCase "Missing key replacement is not stored" $ do
         (out, res) <-
@@ -493,7 +512,7 @@ ioTests =
             runEvalIO $ do
               _ <- evalKvGet (ValInt 0)
               evalKvGet (ValInt 0)
-        (out, res) @?= ([], Right (ValInt 10)),
+        (out, res) @?= (["Invalid key: ValInt 0. Enter a replacement: Invalid key: ValInt 0. Enter a replacement: "], Right (ValInt 10)),
 
 
       testCase "Existing key does not prompt" $ do
@@ -688,7 +707,7 @@ ioTests =
           captureIO [] $
             evalIO'
               (Break (CstBool True))
-        (out, res) @?= ([], Left "Break outside loop)"),
+        (out, res) @?= ([], Left "Break outside loop"),
 
       testCase "Break returns integer" $ do
         (out, res) <-
@@ -697,18 +716,20 @@ ioTests =
               (ForLoop
                 ("p", CstInt 0)
                 ("i", CstInt 100)
-                (Break (CstInt 42)))
+                (If (Eql (Var "i") (CstInt 42)) (Break (Var "i")) (Var "p")))
 
         (out, res) @?= ([], Right (ValInt 42)),
+      
+      testCase "Double Break returns integer" $ do
+        (out, res) <-
+          captureIO [] $
+            evalIO'
+              (ForLoop
+                ("p", CstInt 0)
+                ("i", CstInt 100)
+                (If (Eql (Var "i") (CstInt 42)) (Break (Break (Var "i"))) (Var "p")))
 
-      testCase "Break preserves output before break" $
-        eval'
-          (ForLoop
-            ("p", CstInt 0)
-            ("i", CstInt 100)
-            (Let
-              "_"
-              (Print "before break" (CstInt 0))
-              (Break (CstBool True))))
-          @?= (["before break: 0"], Right (ValBool True))
+        (out, res) @?= ([], Right (ValInt 42))
+
+
     ]

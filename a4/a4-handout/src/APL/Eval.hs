@@ -70,10 +70,11 @@ eval (ForLoop (loopparam, initial) (iv, bound) body) = do
     loop i bound_int loop_v
       | i >= bound_int = pure loop_v
       | otherwise = do
-          loop_v' <-
-            localEnv (envExtend iv (ValInt i) . envExtend loopparam loop_v) $
-              looping $ eval body
-          loop (succ i) bound_int loop_v'
+          looping $ do
+            loop_v' <-
+              localEnv (envExtend iv (ValInt i) . envExtend loopparam loop_v) $
+                eval body
+            loop (succ i) bound_int loop_v'
 eval (Lambda var body) = do
   env <- askEnv
   pure $ ValFun env var body
