@@ -331,7 +331,7 @@ pureTests =
             (If (Eql (Var "i") (CstInt 42)) (Break (Var "i")) (Var "p")))
           @?= ([], Right (ValInt 42)),
       
-      testCase "Double Break preserves output before break" $
+      testCase "Break preserves output before break" $
         eval'
           (ForLoop
             ("p", CstInt 0)
