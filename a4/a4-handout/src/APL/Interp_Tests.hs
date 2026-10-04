@@ -471,21 +471,21 @@ ioTests =
           captureIO ["ValInt 5"] $
             runEvalIO $
               evalKvGet (ValInt 0)
-        res @?= Right (ValInt 5),
+        (out, res) @?= ([], Right (ValInt 5)),
 
       testCase "Missing key with boolean replacement" $ do
         (out, res) <-
           captureIO ["ValBool True"] $
             runEvalIO $
               evalKvGet (ValInt 0)
-        res @?= Right (ValBool True),
+        (out, res) @?= ([], Right (ValBool True)),
 
       testCase "Missing key with invalid replacement" $ do
         (out, res) <-
           captureIO ["lol"] $
             runEvalIO $
               evalKvGet (ValInt 0)
-        res @?= Left "Invalid value input: lol",
+        (out, res) @?= ([], Left "Invalid value input: lol"),
 
       testCase "Missing key replacement is not stored" $ do
         (out, res) <-
@@ -493,7 +493,7 @@ ioTests =
             runEvalIO $ do
               _ <- evalKvGet (ValInt 0)
               evalKvGet (ValInt 0)
-        res @?= Right (ValInt 10),
+        (out, res) @?= ([], Right (ValInt 10)),
 
 
       testCase "Existing key does not prompt" $ do

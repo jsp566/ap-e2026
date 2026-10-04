@@ -110,6 +110,7 @@ localEnv f = modifyEffects g
     g (ReadOp k) = ReadOp $ k . f
     g (TryCatchOp m1 m2 k) = TryCatchOp (localEnv f m1) (localEnv f m2) k
     g (TransactionOp m k) = TransactionOp (localEnv f m) k
+    g (LoopingOp m k) = LoopingOp (localEnv f m) k
     g op = op
 
 evalPrint :: String -> EvalM ()
@@ -133,8 +134,8 @@ transaction m = Free $ TransactionOp m $ pure
 -- | Enclose a computation @m@ such that if a 'breakLoop' is executed in @m@,
 -- execution will return here.
 looping :: EvalM Val -> EvalM Val
-looping m = Free $ LoopingOp m $ \val -> pure val
+looping m = Free $ LoopingOp m $ pure
 
 -- | Return the provided value from the most immediately enclosing 'looping'.
 breakLoop :: Val -> EvalM a
-breakLoop val = error "TODO"
+breakLoop val = Free $ BreakLoopOp val $ failure "Break outside loop"

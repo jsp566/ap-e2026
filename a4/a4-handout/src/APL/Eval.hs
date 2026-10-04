@@ -72,7 +72,7 @@ eval (ForLoop (loopparam, initial) (iv, bound) body) = do
       | otherwise = do
           loop_v' <-
             localEnv (envExtend iv (ValInt i) . envExtend loopparam loop_v) $
-              eval body
+              looping $ eval body
           loop (succ i) bound_int loop_v'
 eval (Lambda var body) = do
   env <- askEnv
@@ -109,4 +109,6 @@ eval (KvGet k_exp) = do
   v <- evalKvGet k
   pure v
 eval (Transaction e) = transaction $ eval e
-eval (Break e) = eval e
+eval (Break e) = do
+  v <- eval e
+  breakLoop v

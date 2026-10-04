@@ -87,9 +87,7 @@ runEvalIO evalm = do
     runEvalIO' r db (Free (TransactionOp m k)) =
       withTempDB $ \temp -> do
         copyDB db temp
-
         result <- runEvalIO' r temp m
-
         case result of
           Left err ->
             pure $ Left err
@@ -97,3 +95,5 @@ runEvalIO evalm = do
           Right val -> do
             copyDB temp db
             runEvalIO' r db (k val)
+    runEvalIO' r db (Free (LoopingOp m k)) = undefined
+    runEvalIO' r db (Free (BreakLoopOp val m)) = undefined

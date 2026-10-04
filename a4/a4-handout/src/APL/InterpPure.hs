@@ -28,5 +28,7 @@ runEval = runEval' envEmpty stateInitial
       in runEval' r s' m
     runEval' r s (Free (TransactionOp m k)) =
       runEval' r s (m >>= k)
+    runEval' r s (Free (LoopingOp m k)) = undefined
+    runEval' r s (Free (BreakLoopOp val m)) = undefined
 
       
