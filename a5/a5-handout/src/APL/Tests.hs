@@ -3,9 +3,11 @@ module APL.Tests
   )
 where
 
-import APL.AST (Exp (..), subExp)
+import APL.AST (Exp (..), subExp, printExp)
 import APL.Error (isVariableError, isDomainError, isTypeError)
 import APL.Check (checkExp)
+import APL.Parser (parseAPL)
+import APL.Eval (eval, runEval)
 import Test.QuickCheck
   ( Property
   , Gen
@@ -80,10 +82,14 @@ expCoverage e = checkCoverage
   $ ()
 
 parsePrinted :: Exp -> Bool
-parsePrinted _ = undefined
+parsePrinted e = case parseAPL "" (printExp e) of 
+  Left err -> False
+  Right e' -> e == e'
 
 onlyCheckedErrors :: Exp -> Bool
-onlyCheckedErrors _ = undefined
+onlyCheckedErrors e = case (runEval . eval) e of
+  Left err -> elem err (checkExp e)
+  Right _ -> True 
 
 -- The number of tests is part of the specification of this test suite: some of
 -- these properties fail only rarely.  Do not reduce it.
