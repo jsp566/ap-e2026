@@ -18,6 +18,8 @@ import Test.QuickCheck
   , frequency
   , elements
   , listOf
+  , choose
+  , vectorOf
   , sized
   , withMaxSuccess
   )
@@ -52,7 +54,12 @@ instance Arbitrary Exp where
 genVar :: Gen VName
 genVar = do
     alpha <- elements $ ['a' .. 'z'] ++ ['A' .. 'Z']
-    alphaNums <- listOf $ elements $ ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9']
+    alphaNums <- 
+      frequency 
+        [ (1, listOf $ elements $ ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'])
+        , (1, do
+            n <- choose (1,3)
+            vectorOf n $ elements $ ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['0' .. '9'])]
     let v = alpha : alphaNums
     if v `elem` keywords
       then genVar
@@ -62,28 +69,40 @@ genExp' :: Int -> Gen Exp
 genExp' = genExp []
 
 genExp :: [VName] -> Int -> Gen Exp
-genExp [] 0 = frequency [(1, CstInt <$> arbitrary), (1, CstBool <$> arbitrary)]
-genExp vlist 0 = frequency [(1, CstInt <$> arbitrary), (1, CstBool <$> arbitrary), (100, Var <$> frequency [(1, genVar), (100, elements vlist)])]
+genExp vlist 0 = 
+  frequency $ case vlist of 
+      [] -> glist
+      _ -> (20, Var <$> elements vlist) : glist
+  where 
+    glist = 
+      [ (20, CstInt <$> arbitrary)
+      , (20, CstBool <$> arbitrary)
+      , (1, Var <$> genVar)]
 genExp vlist size =
-  frequency
-    [ (10, CstInt <$> arbitrary)
-    , (10, CstBool <$> arbitrary)
-    , (10, Add <$> genExp vlist halfSize <*> genExp vlist halfSize)
-    , (10, Sub <$> genExp vlist halfSize <*> genExp vlist halfSize)
-    , (10, Mul <$> genExp vlist halfSize <*> genExp vlist halfSize)
-    , (10, Div <$> genExp vlist halfSize <*> genExp vlist halfSize)
-    , (10, Pow <$> genExp vlist halfSize <*> genExp vlist halfSize)
-    , (10, Eql <$> genExp vlist halfSize <*> genExp vlist halfSize)
-    , (10, If <$> genExp vlist thirdSize <*> genExp vlist thirdSize <*> genExp vlist thirdSize)
-    , (1, Var <$> genVar)
-    , (50, do
-      x <- genVar
-      Let <$> pure x <*> genExp vlist halfSize <*> genExp (x : vlist) halfSize)
-    , (10, Lambda <$> genVar <*> genExp vlist (size - 1))
-    , (10, Apply <$> genExp vlist halfSize <*> genExp vlist halfSize)
-    , (10, TryCatch <$> genExp vlist halfSize <*> genExp vlist halfSize)
-    ]
-  where
+  frequency $ case vlist of 
+      [] -> glist
+      _ -> (20, Var <$> elements vlist) : glist
+  where 
+    glist = 
+      [ (20, CstInt <$> arbitrary)
+      , (20, CstBool <$> arbitrary)
+      , (20, Add <$> genExp vlist halfSize <*> genExp vlist halfSize)
+      , (20, Sub <$> genExp vlist halfSize <*> genExp vlist halfSize)
+      , (20, Mul <$> genExp vlist halfSize <*> genExp vlist halfSize)
+      , (20, Div <$> genExp vlist halfSize <*> genExp vlist halfSize)
+      , (20, Pow <$> genExp vlist halfSize <*> genExp vlist halfSize)
+      , (20, Eql <$> genExp vlist halfSize <*> genExp vlist halfSize)
+      , (20, If <$> genExp vlist thirdSize <*> genExp vlist thirdSize <*> genExp vlist thirdSize)
+      , (1, Var <$> genVar)
+      , (20, do
+          x <- genVar
+          Let <$> pure x <*> genExp vlist halfSize <*> genExp (x : vlist) halfSize)
+      , (20,  do
+          x <- genVar
+          Lambda <$> pure x <*> genExp (x : vlist) (size - 1))
+      , (20, Apply <$> genExp vlist halfSize <*> genExp vlist halfSize)
+      , (20, TryCatch <$> genExp vlist halfSize <*> genExp vlist halfSize)
+      ]
     halfSize = size `div` 2
     thirdSize = size `div` 3
 
