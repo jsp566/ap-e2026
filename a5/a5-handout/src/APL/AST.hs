@@ -59,10 +59,12 @@ printExp (Let v e1 e2) =
       ++ printExp e2
 printExp (Lambda v body) =
   parens $ "\\" ++ v ++ " -> " ++ printExp body
+printExp (Apply x (Apply y z)) =
+  printExp x ++ " " ++ (parens $ printExp (Apply y z))
 printExp (Apply x y) =
   printExp x ++ " " ++ printExp y
 printExp (TryCatch x y) =
-  "try " ++ printExp x ++ " catch " ++ printExp y
+  parens $ "try " ++ printExp x ++ " catch " ++ printExp y
 
 subExp :: Exp -> [Exp]
 subExp e = e : case e of

@@ -1,4 +1,4 @@
-module APL.Parser (parseAPL) where
+module APL.Parser (parseAPL, keywords) where
 
 import APL.AST (Exp (..), VName)
 import Control.Monad (void)
@@ -16,6 +16,7 @@ import Text.Megaparsec
     satisfy,
     some,
     try,
+    optional,
   )
 import Text.Megaparsec.Char (space)
 
@@ -48,7 +49,13 @@ lVName = lexeme $ try $ do
 
 lInteger :: Parser Integer
 lInteger =
-  lexeme $ read <$> some (satisfy isDigit) <* notFollowedBy (satisfy isAlphaNum)
+  lexeme $ try $ read <$> do 
+    neg <- optional (chunk "-")
+    digits <- some (satisfy isDigit)
+    notFollowedBy (satisfy isAlphaNum)
+    case neg of
+      Just _ -> pure $ '-' : digits
+      Nothing -> pure digits
 
 lString :: String -> Parser ()
 lString s = lexeme $ void $ chunk s
