@@ -342,14 +342,20 @@ tests =
               r2 <- jobWait spc j
               r2 @?= Just DoneCancelled
 
-
-              workerStop worker
-
-
               result2 <- workerAdd spc "worker1"
               case result2 of
                 Left err ->
                   assertFailure $
                     "Expected removed worker name to be reusable: " ++ err
-                Right _ -> pure ()
+                Right _ -> do 
+                  workerStop worker
+
+                  j2 <- jobAdd spc $
+                    Job (threadDelay 200000) 30
+                
+                  r3 <- jobStatus spc j2
+                  r3 @?= Just JobRunning
+
+                  r4 <- jobWait spc j2
+                  r4 @?= Just Done
       ]
