@@ -339,15 +339,13 @@ tests =
               r1 @?= Just JobRunning
 
               workerStop worker
-
-              -- Wait for the running job to be cancelled.
               r2 <- jobWait spc j
               r2 @?= Just DoneCancelled
 
-              -- Stopping the already stopped worker again should not crash.
+
               workerStop worker
 
-              -- The removed worker's name should be reusable.
+
               result2 <- workerAdd spc "worker1"
               case result2 of
                 Left err ->
