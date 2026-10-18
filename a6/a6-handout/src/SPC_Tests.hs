@@ -74,11 +74,96 @@ tests =
           spc2 <- startSPC
           _ <- workerAdd spc2 ""
           r2 <- jobWait spc2 j1
-          r2 @?= Nothing
+          r2 @?= Nothing,
 
         -- Adding worker
+        testCase "adding worker" $ do
+          spc <- startSPC
+          result <- workerAdd spc "worker1"
+          case result of
+            Left err -> assertFailure err
+            Right _ -> pure (),
+
+      
         -- Adding worker that already exists
+      
+        testCase "adding duplicate worker" $ do
+          spc <- startSPC
+          result1 <- workerAdd spc "worker1"
+          case result1 of
+            Left err -> assertFailure err
+            Right _ -> pure ()
+
+          result2 <- workerAdd spc "worker1"
+          case result2 of
+            Left _ -> pure ()
+            Right _ ->
+              assertFailure "Expected duplicate worker name to be rejected",
+
         -- Removing worker
+        testCase "removing worker" $ do
+          spc <- startSPC
+          result <- workerAdd spc "worker1"
+
+          case result of
+            Left err -> assertFailure err
+            Right worker -> do
+              j <- jobAdd spc $
+                Job (threadDelay 20000000) 30
+
+              r1 <- jobStatus spc j
+              r1 @?= Just JobRunning
+
+              workerStop worker
+
+              r2 <- jobWait spc j
+              r2 @?= Just DoneCancelled,
+
         -- Removing worker twice
+        testCase "removing worker twice" $ do
+          spc <- startSPC
+          result <- workerAdd spc "worker1"
+
+          case result of
+            Left err -> assertFailure err
+            Right worker -> do
+              j <- jobAdd spc $
+                Job (threadDelay 20000000) 30
+
+              r1 <- jobStatus spc j
+              r1 @?= Just JobRunning
+
+              workerStop worker
+
+              r2 <- jobWait spc j
+              r2 @?= Just DoneCancelled
+
+              -- Stopping an already stopped worker should have no effect.
+              workerStop worker,
+
         -- Adding worker that has been removed 
+        testCase "adding worker after removal" $ do
+          spc <- startSPC
+          result1 <- workerAdd spc "worker1"
+
+          case result1 of
+            Left err -> assertFailure err
+            Right worker -> do
+              j <- jobAdd spc $
+                Job (threadDelay 20000000) 30
+
+              r1 <- jobStatus spc j
+              r1 @?= Just JobRunning
+
+              workerStop worker
+
+              -- Waiting confirms SPC has processed the worker-stop message.
+              r2 <- jobWait spc j
+              r2 @?= Just DoneCancelled
+
+              result2 <- workerAdd spc "worker1"
+              case result2 of
+                Left err -> assertFailure $
+                  "Expected removed worker name to be reusable: " ++ err
+                Right _ -> pure ()
       ]

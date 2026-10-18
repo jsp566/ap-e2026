@@ -141,8 +141,7 @@ data SPCState = SPCState
     -- TODO: you will need to add more fields.
     spcWaiting :: [(JobId, ReplyChan (Maybe JobDoneReason))],
     spcWorkersIdle :: [(WorkerName, Worker)],
-    spcWorkersBusy :: [(WorkerName, (Worker, JobId))],
-    spcWorkersStopped :: [WorkerName]
+    spcWorkersBusy :: [(WorkerName, (Worker, JobId))]
 
   }
 
@@ -239,15 +238,11 @@ workerIsIdle workername worker = do
 workerIsGone :: WorkerName -> SPCM ()
 workerIsGone workername = do
   state <- get
-  if (elem workername $ spcWorkersStopped state)
-    then pure ()
-    else
-      put $ 
-        state 
-          { spcWorkersIdle = removeAssoc workername $ spcWorkersIdle state,
-            spcWorkersBusy = removeAssoc workername $ spcWorkersBusy state,
-            spcWorkersStopped = workername : (spcWorkersStopped state)
-          }
+  put $ 
+    state 
+      { spcWorkersIdle = removeAssoc workername $ spcWorkersIdle state,
+        spcWorkersBusy = removeAssoc workername $ spcWorkersBusy state
+      }
 
 checkTimeouts :: SPCM ()
 checkTimeouts = do
@@ -274,10 +269,9 @@ workerExists :: WorkerName -> SPCM Bool
 workerExists workername = do
   state <- get
   case (lookup workername $ spcWorkersIdle state,
-        lookup workername $ spcWorkersBusy state,
-        elem workername $ spcWorkersStopped state
+        lookup workername $ spcWorkersBusy state
         ) of
-    (Nothing, Nothing, False) -> pure False
+    (Nothing, Nothing) -> pure False
     _ -> pure True
 
 
@@ -415,8 +409,7 @@ startSPC = do
             spcJobsDone = [],
             spcWaiting = [],
             spcWorkersIdle = [],
-            spcWorkersBusy = [],
-            spcWorkersStopped = []
+            spcWorkersBusy = []
           }
   c <- spawn $ \c -> runSPCM initial_state $ forever $ handleMsg c
   void $ spawn $ timer c
