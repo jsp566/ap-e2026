@@ -502,7 +502,7 @@ jobStatus :: SPC -> JobId -> IO (Maybe JobStatus)
 data SPCMsg
   = ...
   | -- | Immediately reply the status of the job.
-    MsgJobStatus JobId (ReplyChan JobStatus)
+    MsgJobStatus JobId (ReplyChan (Maybe JobStatus))
 
 handleMsg :: Chan SPCMsg -> SPCM ()
 handleMsg c = do

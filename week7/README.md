@@ -8,6 +8,25 @@ merely emphasize concepts previously seen. Naturally, they build on previous
 exercises and assignments. There is no corresponding assignment to be handed,
 and therefore they are much larger than previous weekly exercises.
 
+* [Slides from Thursday](./7b.pdf)
+
+## Dummy exam and material
+
+To help you prepare for the written exam, here is a dummy exam intended to
+resemble the actual exam:
+
+* [Dummy exam](./exam-dummy.pdf)
+* [Dummy exam with solutions](./exam-dummy-solutions.pdf)
+* [Answer sheet](./answer-sheet.docx)
+
+For the written exam, you will receive access to PDF files containing the course
+notes, as well as a *compendium* containing all assignments, exercises, and code
+handouts. They are also provided here so you know what you can expect at the
+exam:
+
+* [Course notes](./ap-notes.pdf)
+* [Compendium](./compendium.pdf)
+
 ## Introduction
 
 The starting point for these exercises will be a slightly cut down variant of
