@@ -21,3 +21,23 @@ runEval = fmap fst $ runEval' envEmpty stateInitial
       let s' = (key, val) : filter ((/= key) . fst) s
        in runEval' r s' m
     runEval' _ s (Free (ErrorOp e)) = (Left e, s)
+    runEval' r s (Free (StepOp m)) = runEval' r s m
+    runEval' r s (Free (BothOfOp x y c)) = 
+      let (res, s') = runEval' r s x
+      in case res of
+        Left err -> (Left err, s')
+        Right val -> 
+          let (res', s'') = runEval' r s' y
+          in case res' of 
+            Left err' -> (Left err', s'')
+            Right val' -> 
+              runEval' r s'' $ c $ ValTuple [val, val']
+    runEval' r s (Free (OneOfOp x y c)) = 
+      let (res, s') = runEval' r s x
+      in case res of
+        Right val -> runEval' r s' $ c val
+        Left _ -> 
+          let (res', s'') = runEval' r s y
+          in case res' of 
+            Right val' -> runEval' r s'' $ c val'
+            Left err -> (Left err, s'')

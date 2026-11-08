@@ -34,7 +34,11 @@ keywords =
     "let",
     "in",
     "put",
-    "get"
+    "get",
+    "loop",
+    "for",
+    "while",
+    "do"
   ]
 
 lVName :: Parser VName
@@ -63,16 +67,38 @@ pBool =
       const False <$> lKeyword "false"
     ]
 
-pAtom :: Parser Exp
-pAtom =
+pAtom2 :: Parser Exp
+pAtom2 =
   choice
-    [ CstInt <$> lInteger,
+    [ Var <$> lVName,
+      CstInt <$> lInteger,
       CstBool <$> pBool,
-      Var <$> lVName,
+      try $ Tuple <$> (lString "(" *> lString ")" *> pure []),
       try $ lString "(" *> pExp <* lString ")",
+      try $
+        Tuple
+          <$> ( lString "("
+                  *> ((:) <$> pExp <*> some (lString "," *> pExp))
+                  <* lString ")"
+              ),
       KvPut <$> (lKeyword "put" *> pAtom) <*> pAtom,
       KvGet <$> (lKeyword "get" *> pAtom)
     ]
+
+pAtom1 :: Parser Exp
+pAtom1 = pAtom2 >>= chain
+  where
+    chain x =
+      choice
+        [ do
+            lString "."
+            i <- lInteger
+            chain $ Project x i,
+          pure x
+        ]
+
+pAtom :: Parser Exp
+pAtom = pAtom1
 
 pFExp :: Parser Exp
 pFExp = chain =<< pAtom
@@ -99,6 +125,17 @@ pLExp =
         <$> (lKeyword "let" *> lVName)
         <*> (lString "=" *> pExp)
         <*> (lKeyword "in" *> pExp),
+      try $ ForLoop
+        <$> ((,) <$> (lKeyword "loop" *> lVName)
+          <*> (lString "=" *> pExp))
+        <*> ((,) <$> (lKeyword "for" *> lVName)
+          <*> (lString "<" *> pExp))
+        <*> (lKeyword "do" *> pExp),
+      try $ WhileLoop
+        <$> ((,) <$> (lKeyword "loop" *> lVName)
+          <*> (lString "=" *> pExp))
+        <*> (lKeyword "while" *> pExp)
+        <*> (lKeyword "do" *> pExp),
       pFExp
     ]
 
@@ -146,8 +183,32 @@ pExp1 = pExp2 >>= chain
           pure x
         ]
 
+pExp0 :: Parser Exp
+pExp0 = pExp1 >>= chain
+  where
+    chain x =
+      choice
+        [ do
+            lString "&&"
+            y <- pExp1
+            chain $ BothOf x y,
+          pure x
+        ]
+
+pExp00 :: Parser Exp
+pExp00 = pExp0 >>= chain
+  where
+    chain x =
+      choice
+        [ do
+            lString "||"
+            y <- pExp0
+            chain $ OneOf x y,
+          pure x
+        ]
+
 pExp :: Parser Exp
-pExp = pExp1
+pExp = pExp00
 
 parseAPL :: FilePath -> String -> Either String Exp
 parseAPL fname s = case parse (space *> pExp <* eof) fname s of

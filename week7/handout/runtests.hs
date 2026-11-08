@@ -8,7 +8,7 @@ import Test.Tasty (defaultMain, localOption, mkTimeout, testGroup)
 main :: IO ()
 main =
   defaultMain $
-    localOption (mkTimeout 3000000) $
+    localOption (mkTimeout 30000) $
       testGroup
         "Tests"
         [ KVDB_Tests.tests,

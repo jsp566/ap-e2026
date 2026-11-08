@@ -59,7 +59,7 @@ eval (Apply e1 e2) = do
   v2 <- eval e2
   case (v1, v2) of
     (ValFun f_env var body, arg) ->
-      localEnv (const $ envExtend var arg f_env) $ eval body
+      evalStep $ localEnv (const $ envExtend var arg f_env) $ eval body
     (_, _) ->
       failure "Cannot apply non-function"
 eval (KvPut key_e val_e) = do
@@ -84,5 +84,29 @@ eval (ForLoop (loopparam, initial) (iv, bound) body) = do
       | otherwise = do
           loop_v' <-
             localEnv (envExtend iv (ValInt i) . envExtend loopparam loop_v) $
-              eval body
+              evalStep $ eval body
           loop (succ i) bound_int loop_v'
+eval (Tuple es) =
+  ValTuple <$> mapM eval es
+eval (Project e i) = do
+  val <- eval e
+  case val of
+    ValTuple l -> let getlistelem [] _ = failure "Index out of tuple range"
+                      getlistelem (x:_) 0 = pure x
+                      getlistelem (_:xs) n = getlistelem xs (n-1)
+                      in getlistelem l i
+    _ -> failure "Try to project an element from a non-tuple"
+eval (WhileLoop (p, initial) cond body) = do
+  initial_v <- eval initial
+  whileloop initial_v
+  where 
+    whileloop v = do
+      c <- localEnv (envExtend p v) $ eval cond
+      case c of 
+        ValBool True -> do
+          v' <- evalStep $ localEnv (envExtend p v) $ eval body
+          whileloop v'
+        ValBool False -> pure v
+        _ -> failure "Condition is not bool"
+eval (BothOf e1 e2) = do evalBothOf (eval e1) (eval e2)
+eval (OneOf e1 e2) = do evalOneOf (eval e1) (eval e2)
